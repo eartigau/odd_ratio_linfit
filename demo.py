@@ -452,6 +452,20 @@ def demo_polynomial_fit():
     x = np.linspace(0, 10, n_points)
     yerr = np.ones(n_points) * noise_level
     
+    # Compute theoretical errors from first principles
+    # For WLS: Cov(coeffs) = (X^T W X)^(-1) where W = diag(1/sigma^2)
+    # Design matrix for quadratic: columns are [x^2, x, 1] (highest power first like polyfit)
+    X = np.column_stack([x**2, x, np.ones_like(x)])
+    W = np.diag(1.0 / yerr**2)
+    XtWX = X.T @ W @ X
+    cov_theory = np.linalg.inv(XtWX)
+    theory_stds = np.sqrt(np.diag(cov_theory))
+    
+    print(f"\nTheoretical errors (from covariance matrix, no outliers):")
+    print(f"  σ(a₂) = {theory_stds[0]:.4f}")
+    print(f"  σ(a₁) = {theory_stds[1]:.4f}")
+    print(f"  σ(a₀) = {theory_stds[2]:.4f}")
+    
     # Storage for MC results
     rob_coeffs_all = []
     std_coeffs_all = []
@@ -487,10 +501,11 @@ def demo_polynomial_fit():
     coeff_names = ['a₂ (x²)', 'a₁ (x)', 'a₀ (const)']
     
     print(f"\nResults from {n_realizations} realizations:")
-    print(f"\n{'Parameter':<12} {'True':>8} {'ORF mean':>10} {'ORF std':>10} {'Naive mean':>12} {'Naive std':>10}")
-    print("-" * 65)
+    print(f"\n{'Parameter':<12} {'True':>8} {'Theory σ':>10} {'ORF σ':>10} {'Naive σ':>10} {'ORF/Theory':>12}")
+    print("-" * 70)
     for i, name in enumerate(coeff_names):
-        print(f"{name:<12} {true_coeffs[i]:>8.4f} {rob_means[i]:>10.4f} {rob_stds[i]:>10.4f} {std_means[i]:>12.4f} {std_stds[i]:>10.4f}")
+        ratio = rob_stds[i] / theory_stds[i]
+        print(f"{name:<12} {true_coeffs[i]:>8.4f} {theory_stds[i]:>10.4f} {rob_stds[i]:>10.4f} {std_stds[i]:>10.4f} {ratio:>12.2f}")
     
     # Generate one example realization for the fit plot
     np.random.seed(42)
@@ -529,7 +544,7 @@ def demo_polynomial_fit():
     plt.savefig(PLOT_DIR / 'polynomial_fit_comparison.pdf')
     print(f"\nSaved: {PLOT_DIR / 'polynomial_fit_comparison.png'}")
     
-    # Figure 2: Histograms for each coefficient
+    # Figure 2: Histograms for each coefficient with theoretical Gaussian
     fig2, axes = plt.subplots(3, 1, figsize=(10, 10))
     
     for i, (ax, name) in enumerate(zip(axes, coeff_names)):
@@ -545,9 +560,13 @@ def demo_polynomial_fit():
         ax.hist(rob_coeffs_all[:, i], bins=bins, density=True, alpha=0.5, color='#2E86AB',
                 edgecolor='#2E86AB', linewidth=1.5, label=f'ORF (σ={rob_stds[i]:.4f})')
         
+        # Theoretical Gaussian
+        x_gauss = np.linspace(bin_min, bin_max, 200)
+        gauss_theory = np.exp(-(x_gauss - true_coeffs[i])**2 / (2 * theory_stds[i]**2)) / (theory_stds[i] * np.sqrt(2*np.pi))
+        ax.plot(x_gauss, gauss_theory, 'k-', lw=2, label=f'Theory (σ={theory_stds[i]:.4f})')
+        
         # True value line
-        ax.axvline(true_coeffs[i], color='black', linestyle='--', lw=2, 
-                   label=f'True = {true_coeffs[i]:.4f}')
+        ax.axvline(true_coeffs[i], color='black', linestyle='--', lw=2, alpha=0.7)
         
         ax.set_xlabel(f'{name}')
         ax.set_ylabel('Probability Density')
@@ -622,27 +641,30 @@ def demo_convergence():
         a_history.append(a)
         b_history.append(b)
     
-    # Create figure
+    # Create figure - show convergence to final value
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
     iterations = np.arange(len(a_history))
+    a_final = a_history[-1]
+    b_final = b_history[-1]
     
     ax = axes[0]
-    ax.plot(iterations, a_history, 'o-', color='#2E86AB', lw=2, markersize=8)
-    ax.axhline(true_a, color='black', linestyle='--', lw=2, label=f'True = {true_a}')
+    a_diff = np.abs(np.array(a_history) - a_final)
+    # Avoid log(0) by setting final point to a small value
+    a_diff[-1] = 1e-16
+    ax.semilogy(iterations[:-1], a_diff[:-1], 'o-', color='#2E86AB', lw=2, markersize=8)
     ax.set_xlabel('Iteration')
-    ax.set_ylabel('Intercept (a)')
-    ax.set_title('Intercept Convergence')
-    ax.legend()
+    ax.set_ylabel('|a - a_final|')
+    ax.set_title(f'Intercept Convergence (final a = {a_final:.4f})')
     ax.grid(True, alpha=0.3)
     
     ax = axes[1]
-    ax.plot(iterations, b_history, 'o-', color='#2E86AB', lw=2, markersize=8)
-    ax.axhline(true_b, color='black', linestyle='--', lw=2, label=f'True = {true_b}')
+    b_diff = np.abs(np.array(b_history) - b_final)
+    b_diff[-1] = 1e-16
+    ax.semilogy(iterations[:-1], b_diff[:-1], 'o-', color='#2E86AB', lw=2, markersize=8)
     ax.set_xlabel('Iteration')
-    ax.set_ylabel('Slope (b)')
-    ax.set_title('Slope Convergence')
-    ax.legend()
+    ax.set_ylabel('|b - b_final|')
+    ax.set_title(f'Slope Convergence (final b = {b_final:.4f})')
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
