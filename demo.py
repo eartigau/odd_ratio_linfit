@@ -695,8 +695,8 @@ def demo_heteroscedastic():
     true_a, true_b = 2.0, 0.5
     
     x = np.linspace(0, 10, n_points)
-    # Uncertainties vary from 0.3 to 2.0 across the x range
-    yerr = 0.3 + 1.7 * (x / x.max())
+    # Uncertainties vary randomly from 0.3 to 2.0
+    yerr = np.random.uniform(0.3, 2.0, n_points)
     
     # Generate data following the true line with heteroscedastic noise
     y_true = true_a + true_b * x
@@ -753,7 +753,7 @@ def demo_heteroscedastic():
     
     ax.set_xlabel('x')
     ax.set_ylabel('y')
-    ax.set_title('Heteroscedastic errors (σ = 0.3 to 2.0) with outliers at 3σ, 4σ, 5σ, 8σ, 10σ')
+    ax.set_title('Random heteroscedastic errors (σ ∈ [0.3, 2.0]) with outliers at 3σ, 4σ, 5σ, 8σ, 10σ')
     ax.legend(loc='upper left')
     ax.grid(True, alpha=0.3)
     

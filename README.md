@@ -311,7 +311,7 @@ The **theoretical scatter** represents the minimum achievable uncertainty, deriv
 
 $$\text{Cov}(\hat{\beta}) = (X^T W X)^{-1}$$
 
-where $X$ is the design matrix and $W = \text{diag}(1/\sigma_i^2)$ is the weight matrix. The theoretical standard deviation for each parameter is $\sigma_{\text{theory}} = \sqrt{\text{diag}(\text{Cov})}$. This is the **Cramér-Rao lower bound**—no unbiased estimator can achieve smaller variance. A method achieving this bound is called *efficient*.
+where $X$ is the design matrix and $W = \text{diag}(1/\sigma_i^2)$ is the weight matrix. The theoretical standard deviation for each parameter is $\sigma_{\text{theory}} = \sqrt{\text{diag}(\text{Cov})}$. This is the [Cramér-Rao lower bound](https://en.wikipedia.org/wiki/Cramér–Rao_bound)—no unbiased estimator can achieve smaller variance. A method achieving this bound is called *efficient*.
 
 #### Results: ORF vs Naive WLS
 
