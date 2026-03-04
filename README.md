@@ -5,7 +5,7 @@
 
 **Robust linear regression using a Gaussian mixture model for outlier rejection.**
 
-This package implements a robust fitting algorithm that extends the odd ratio weighted mean method from Appendix A of [Artigau et al. (2022)](https://ui.adsabs.harvard.edu/abs/2022AJ....164...84A) to linear and polynomial regression. The algorithm iteratively down-weights data points that are likely to be outliers while preserving proper statistical uncertainties.
+This package implements a robust fitting algorithm that extends the odd ratio weighted mean method from Appendix A of [Artigau et al. (2022)](https://ui.adsabs.harvard.edu/abs/2022AJ....164...84A) to linear regression. The algorithm iteratively down-weights data points that are likely to be outliers while preserving proper statistical uncertainties.
 
 ## 🚀 Key Features
 
@@ -14,7 +14,7 @@ This package implements a robust fitting algorithm that extends the odd ratio we
 - **Handles heteroscedastic data**: Correctly accounts for varying uncertainties across data points
 - **No manual sigma-clipping**: Uses a probabilistic mixture model instead of arbitrary thresholds
 - **Fast convergence**: Typically converges in 3-5 iterations
-- **Flexible**: Works with linear fits, weighted means, and polynomial regression
+- **Flexible**: Works with weighted means and linear fits
 
 ## 📦 Installation
 
@@ -27,19 +27,32 @@ pip install -e .
 
 ## 🔧 Quick Start
 
+### Robust Weighted Mean
+
 ```python
 import numpy as np
-from odd_ratio_linfit import odd_ratio_linfit, odd_ratio_mean
+from odd_ratio_linfit import odd_ratio_mean
+
+# Data with outliers
+values = np.array([10.1, 9.8, 10.2, 50.0, 10.0, -20.0, 9.9, 10.3])
+errors = np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+
+mean, err = odd_ratio_mean(values, errors)
+print(f"Robust mean: {mean:.2f} ± {err:.2f}")  # ~10.0, ignoring 50 and -20
+```
+
+### Robust Linear Fit
+
+```python
+import numpy as np
+from odd_ratio_linfit import odd_ratio_linfit
 
 # Generate data with outliers
 x = np.linspace(0, 10, 50)
 y = 2.0 + 0.5 * x + np.random.normal(0, 0.5, len(x))
 yerr = np.ones(len(x)) * 0.5
+y[5], y[15], y[25] = 15.0, -5.0, 12.0  # Add outliers
 
-# Add some outliers
-y[5], y[15], y[25] = 15.0, -5.0, 12.0
-
-# Robust linear fit
 a, a_err, b, b_err = odd_ratio_linfit(x, y, yerr)[:4]
 print(f"Intercept: {a:.3f} ± {a_err:.3f}")
 print(f"Slope: {b:.3f} ± {b_err:.3f}")
@@ -79,17 +92,54 @@ where $f_0$ is the prior probability that any point is an outlier (default: $2 \
 
 ## 📊 Examples and Demonstrations
 
-### Linear Fit with Outliers
+Run `python demo.py` to generate all demonstration plots.
 
-The robust fit (blue) correctly recovers the true line (dashed black) despite strong outliers, while standard weighted least squares (orange) is significantly biased.
+---
 
-![Linear Fit Comparison](plots/linear_fit_comparison.png)
+## Robust Weighted Mean
 
-### Robust Weighted Mean
+The foundation of this package is the **robust weighted mean**, which computes a weighted average while automatically down-weighting outliers. This is the building block from which the linear fit is derived.
+
+### Usage
+
+```python
+from odd_ratio_linfit import odd_ratio_mean
+
+# Values with outliers
+values = np.array([10.1, 9.8, 10.2, 50.0, 10.0, -20.0, 9.9])
+errors = np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+
+mean, err = odd_ratio_mean(values, errors)
+print(f"Robust mean: {mean:.2f} ± {err:.2f}")  # ~10.0, ignoring outliers
+```
+
+### Comparison with Standard Methods
 
 The odd ratio method provides an accurate estimate of the mean even with 10% outliers, outperforming both standard weighted mean and median.
 
 ![Weighted Mean Comparison](plots/weighted_mean_comparison.png)
+
+---
+
+## Robust Linear Fit
+
+Extending the weighted mean concept to linear regression, `odd_ratio_linfit` performs $y = a + bx$ fits that are robust to outliers.
+
+### Usage
+
+```python
+from odd_ratio_linfit import odd_ratio_linfit
+
+a, a_err, b, b_err = odd_ratio_linfit(x, y, yerr)[:4]
+print(f"Intercept: {a:.3f} ± {a_err:.3f}")
+print(f"Slope: {b:.3f} ± {b_err:.3f}")
+```
+
+### Comparison with Standard Fit
+
+The robust fit (blue) correctly recovers the true line (dashed black) despite strong outliers, while standard weighted least squares (orange) is significantly biased.
+
+![Linear Fit Comparison](plots/linear_fit_comparison.png)
 
 ### Robustness vs Outlier Fraction
 
@@ -102,12 +152,6 @@ The algorithm maintains accuracy even with up to 20-25% outliers, while standard
 Smaller values of `odd_ratio` are more conservative (fewer rejections), while larger values are more aggressive. The default value of $2 \times 10^{-4}$ works well for most cases.
 
 ![Odd Ratio Sensitivity](plots/odd_ratio_sensitivity.png)
-
-### Polynomial Fitting
-
-The method extends naturally to polynomial regression:
-
-![Polynomial Fit](plots/polynomial_fit_comparison.png)
 
 ### Convergence Behavior
 
@@ -198,25 +242,6 @@ Compute robust weighted mean.
 **Returns:**
 - `mean`: Robust weighted mean
 - `error`: Uncertainty on the mean
-
-### `odd_ratio_polyfit`
-
-```python
-odd_ratio_polyfit(x, y, yerr, degree=1, odd_ratio=2e-4, nmax=10, conv_cut=1e-2, return_weights=False)
-```
-
-Perform robust polynomial regression.
-
-**Parameters:**
-- `x, y, yerr`: Data arrays
-- `degree`: Polynomial degree (default: 1)
-- `odd_ratio, nmax, conv_cut`: Same as above
-- `return_weights`: If True, also return weights
-
-**Returns:**
-- `coeffs`: Polynomial coefficients (highest power first)
-- `coeffs_err`: Uncertainties on coefficients
-- `weights` (optional): Point weights
 
 ## 🎯 When to Use This Method
 
