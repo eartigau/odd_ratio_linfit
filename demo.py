@@ -69,7 +69,7 @@ def demo_linear_fit_comparison():
     print("=" * 60)
     
     # Generate synthetic data
-    n_points = 50
+    n_points = 1000
     true_a, true_b = 2.0, 0.5  # True intercept and slope
     noise_level = 0.5
     
@@ -79,7 +79,7 @@ def demo_linear_fit_comparison():
     yerr = np.ones(n_points) * noise_level
     
     # Add outliers (10% of data)
-    n_outliers = 5
+    n_outliers = 100
     outlier_idx = np.random.choice(n_points, n_outliers, replace=False)
     y[outlier_idx] = y[outlier_idx] + np.random.choice([-1, 1], n_outliers) * np.random.uniform(5, 15, n_outliers)
     
@@ -152,15 +152,15 @@ def demo_weighted_mean():
     print("=" * 60)
     
     # Generate data with outliers
-    n_points = 100
+    n_points = 10000
     true_value = 10.0
     noise_level = 1.0
     
     values = np.random.normal(true_value, noise_level, n_points)
     errors = np.ones(n_points) * noise_level
     
-    # Add outliers
-    n_outliers = 10
+    # Add outliers (10%)
+    n_outliers = 1000
     outlier_idx = np.random.choice(n_points, n_outliers, replace=False)
     values[outlier_idx] = values[outlier_idx] + np.random.choice([-1, 1], n_outliers) * np.random.uniform(10, 30, n_outliers)
     
@@ -238,7 +238,7 @@ def demo_varying_outlier_fraction():
     print("Demo 3: Robustness vs Outlier Fraction")
     print("=" * 60)
     
-    n_points = 100
+    n_points = 1000
     true_a, true_b = 2.0, 0.5
     noise_level = 0.5
     outlier_fractions = np.linspace(0, 0.3, 16)  # 0% to 30% outliers

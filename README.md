@@ -124,10 +124,10 @@ print(f"Robust mean: {mean:.2f} ± {err:.2f}")  # ~10.0, ignoring outliers
 ### Comparison with Standard Methods
 
 **Simulation setup:**
-- 100 measurements drawn from N(10, 1) with uniform errors σ = 1
+- 10,000 measurements drawn from N(10, 1) with uniform errors σ = 1
 - 10% of points replaced with outliers drawn from U(-50, 50)
 - Comparison: standard weighted mean, median, and odd ratio mean
-- **Expected uncertainty from first principles:** σ/√N = 1/√100 = 0.1
+- **Expected uncertainty from first principles:** σ/√N = 1/√10000 = 0.01
 
 The odd ratio method provides an accurate estimate of the mean even with 10% outliers, outperforming both standard weighted mean and median. The robust method achieves uncertainties close to the theoretical √N improvement expected for uncontaminated data.
 
@@ -159,8 +159,8 @@ print(f"Slope: {b:.3f} ± {b_err:.3f}")
 ### Comparison with Standard Fit
 
 **Simulation setup:**
-- 50 points following y = 2 + 0.5x with Gaussian noise (σ = 0.5)
-- 6 outliers (12%) with deviations of ±5 to ±15 from the true line
+- 1,000 points following y = 2 + 0.5x with Gaussian noise (σ = 0.5)
+- 100 outliers (10%) with deviations of ±5 to ±15 from the true line
 - Comparison: standard weighted least squares vs. odd ratio fit
 
 The robust fit (blue) correctly recovers the true line (dashed black) despite strong outliers, while standard weighted least squares (orange) is significantly biased.
@@ -172,9 +172,9 @@ The robust fit (blue) correctly recovers the true line (dashed black) despite st
 ### Robustness vs Outlier Fraction
 
 **Simulation setup:**
-- Outlier fraction varied from 0% to 40% in steps of 5%
-- 100 Monte Carlo realizations per outlier fraction
-- True model: y = 2 + 0.5x, 50 points, σ = 0.5
+- Outlier fraction varied from 0% to 30% in steps of 2%
+- 50 Monte Carlo realizations per outlier fraction
+- True model: y = 2 + 0.5x, 1,000 points, σ = 0.5
 - Outliers: random points shifted by ±5 to ±15
 
 The algorithm maintains accuracy even with up to 20-25% outliers, while standard methods degrade rapidly.
@@ -278,27 +278,33 @@ The left panel shows data with varying error bar sizes. The point with small err
 
 ## 📈 Statistically Valid Uncertainties
 
-The uncertainties returned by `orf.linear` are **statistically meaningful** and properly calibrated. This is verified through Monte Carlo simulations.
+The uncertainties returned by `orf.linear` are **statistically meaningful** and properly calibrated. This is verified through Monte Carlo simulations, comparing against naive weighted least squares (WLS).
 
 ### Monte Carlo Validation
 
 **Simulation setup:**
 - 1000 independent realizations
-- Each realization: 50 points following y = 2 + 0.5x with σ = 0.5
-- 10% outliers added (5 points shifted by ±5 to ±15)
-- For each realization: fit and record (a, σ_a, b, σ_b)
+- Each realization: 100 points following y = 2 + 0.5x with σ = 0.5
+- 5% outliers added (5 points shifted by ±5 to ±15)
+- For each realization: fit with both ORF and naive WLS, record (a, σ_a, b, σ_b)
 - Compare actual scatter across realizations to mean reported uncertainties
 
 ![Uncertainty Validation](plots/uncertainty_validation.png)
 
-**Key findings:**
+**Key findings - Robust ORF method:**
 - The **actual scatter** in recovered parameters matches the **reported uncertainties** (ratio ≈ 1.0)
 - Normalized residuals $(p - p_{\rm true})/\sigma_p$ follow a standard normal distribution N(0,1)
-- This confirms that the reported errors correctly describe the statistical uncertainty
+- Parameters are **unbiased** - mean recovered values match truth
+
+**Naive WLS completely fails:**
+- **Biased estimates** - the mean recovered intercept is significantly offset from truth
+- **Underestimated uncertainties** - reported errors are ~3-5× smaller than actual scatter
+- Normalized residuals have std >> 1, indicating severely underestimated errors
+- This means naive confidence intervals are **wrong** and will miss the true value far more often than expected
 
 ![Uncertainty Summary](plots/uncertainty_summary.png)
 
-The ratio of actual scatter to mean reported error is ~1.0 for both intercept and slope, validating that the uncertainties are neither over- nor under-estimated.
+The ratio of actual scatter to mean reported error is ~1.0 for ORF (correct uncertainties), but >>1 for naive WLS (underestimated uncertainties). This demonstrates why robust fitting is essential when outliers are present.
 
 *Reproduce with:* `python -c "from demo import demo_uncertainty_validation; demo_uncertainty_validation()"`
 
@@ -307,6 +313,7 @@ The ratio of actual scatter to mean reported error is ~1.0 for both intercept an
 When `orf.linear` returns `a = 2.05 ± 0.15`, you can trust that:
 - The true value has ~68% probability of being within [1.90, 2.20]
 - The uncertainty accounts for the down-weighting of outliers
+- Unlike naive WLS, your confidence intervals will be correctly calibrated
 
 ## 📚 API Reference
 
