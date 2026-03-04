@@ -7,7 +7,7 @@ mixture model approach, extending the odd_ratio_mean method from Artigau et al.
 of being valid measurements versus outliers.
 
 Reference:
-    Artigau et al. (2021), AJ, 162, 144
+    Artigau et al. (2022), AJ, 164, 84, Appendix A
     "Line-by-line Velocity Measurements: an Outlier-resistant Method for 
     Precision Velocimetry"
 """

@@ -4,7 +4,7 @@
 % This file contains a description of the odd ratio linear fit method
 % suitable for copy-pasting into the Methods section of a scientific paper.
 %
-% Reference: Artigau et al. (2021), AJ, 162, 144
+% Reference: Artigau et al. (2022), AJ, 164, 84, Appendix A
 % =============================================================================
 
 % -----------------------------------------------------------------------------
@@ -15,7 +15,7 @@
 % \subsection{Robust Linear Fitting}
 %
 % We performed linear regression using the odd ratio mixture model method
-% \citep{Artigau2021}, which is robust to outliers. This approach models each
+% \citep{Artigau2022}, which is robust to outliers. This approach models each
 % data point as coming from either a Gaussian distribution centered on the
 % true model (valid measurements) or a uniform background distribution
 % (outliers). For each point with residual $r_i$ and uncertainty $\sigma_i$,
@@ -39,7 +39,7 @@
 \subsection{Robust Linear Fitting with Mixture Model}
 \label{sec:odd_ratio_fit}
 
-We employed the odd ratio mixture model method \citep{Artigau2021} for robust
+We employed the odd ratio mixture model method (Appendix A of \citealt{Artigau2022}) for robust
 linear regression. Unlike traditional sigma-clipping approaches that use hard
 thresholds to reject outliers, this method uses a probabilistic model that
 naturally down-weights anomalous points while preserving proper statistical
@@ -56,7 +56,7 @@ point is a valid measurement is:
     \label{eq:odd_ratio}
 \end{equation}
 where $f_0$ is the prior probability that any given point is an outlier. We
-adopted $f_0 = 2 \times 10^{-4}$ following \citet{Artigau2021}.
+adopted $f_0 = 2 \times 10^{-4}$ following \citet{Artigau2022}.
 
 The fitting procedure is iterative:
 \begin{enumerate}
@@ -88,7 +88,7 @@ The method is implemented in the \texttt{odd\_ratio\_linfit} Python package\foot
 % \label{sec:odd_ratio_extended}
 %
 % We employed a robust linear fitting method based on the odd ratio mixture
-% model introduced by \citet{Artigau2021}. This approach treats outlier
+% model introduced in Appendix A of \citet{Artigau2022}. This approach treats outlier
 % rejection as a Bayesian inference problem rather than applying hard
 % thresholds, providing a principled framework that maintains proper
 % statistical uncertainties.
@@ -113,7 +113,7 @@ The method is implemented in the \texttt{odd\_ratio\_linfit} Python package\foot
 %     \label{eq:p_valid}
 % \end{equation}
 %
-% Following \citet{Artigau2021}, we adopt $f_0 = 2 \times 10^{-4}$. This value
+% Following \citet{Artigau2022}, we adopt $f_0 = 2 \times 10^{-4}$. This value
 % implies that roughly 1 in 5000 points is expected to be an outlier \emph{a priori},
 % which is conservative for most astronomical datasets. Points deviating by
 % $\gtrsim 3.5\sigma$ are significantly down-weighted.
@@ -157,21 +157,20 @@ The method is implemented in the \texttt{odd\_ratio\_linfit} Python package\foot
 % -----------------------------------------------------------------------------
 % Add this to your .bib file:
 %
-% @ARTICLE{Artigau2021,
+% @ARTICLE{Artigau2022,
 %        author = {{Artigau}, {\'E}tienne and {Cadieux}, Charles and {Cook}, Neil J. and
 %          {Doyon}, Ren{\'e} and {Vandal}, Thomas and {Donati}, Jean-Fran{\c{c}}ois and
 %          {Moutou}, Claire and {Delfosse}, Xavier and {Fouqu{\'e}}, Pascal and
 %          {Collier Cameron}, Andrew and others},
-%         title = "{Line-by-line Velocity Measurements: An Outlier-resistant Method for Precision Velocimetry}",
+%         title = "{Line-by-line Velocity Measurements: an Outlier-resistant Method for Precision Velocimetry}",
 %       journal = {\aj},
-%          year = 2021,
-%         month = oct,
-%        volume = {162},
-%        number = {4},
-%           eid = {144},
-%         pages = {144},
-%           doi = {10.3847/1538-3881/ac096d},
+%          year = 2022,
+%         month = sep,
+%        volume = {164},
+%        number = {3},
+%           eid = {84},
+%         pages = {84},
+%           doi = {10.3847/1538-3881/ac7f2c},
 % archivePrefix = {arXiv},
-%        eprint = {2106.10092},
+%        eprint = {2207.13524},
 % }
-

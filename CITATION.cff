@@ -49,10 +49,10 @@ references:
         given-names: "Pascal"
       - family-names: "Collier Cameron"
         given-names: "Andrew"
-    title: "Line-by-line Velocity Measurements: An Outlier-resistant Method for Precision Velocimetry"
+    title: "Line-by-line Velocity Measurements: an Outlier-resistant Method for Precision Velocimetry"
     journal: "The Astronomical Journal"
-    year: 2021
-    volume: 162
-    issue: 4
-    pages: 144
-    doi: "10.3847/1538-3881/ac096d"
+    year: 2022
+    volume: 164
+    issue: 3
+    pages: 84
+    doi: "10.3847/1538-3881/ac7f2c"

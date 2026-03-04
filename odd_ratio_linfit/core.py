@@ -63,7 +63,7 @@ def odd_ratio_mean(value: np.ndarray, error: np.ndarray,
 
     References
     ----------
-    Artigau et al. (2021), AJ, 162, 144
+    Artigau et al. (2022), AJ, 164, 84, Appendix A
     "Line-by-line Velocity Measurements: an Outlier-resistant Method for
     Precision Velocimetry"
 
@@ -202,7 +202,7 @@ def odd_ratio_linfit(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
 
     References
     ----------
-    Artigau et al. (2021), AJ, 162, 144
+    Artigau et al. (2022), AJ, 164, 84, Appendix A
     "Line-by-line Velocity Measurements: an Outlier-resistant Method for
     Precision Velocimetry"
 

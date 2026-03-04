@@ -5,7 +5,7 @@
 
 **Robust linear regression using a Gaussian mixture model for outlier rejection.**
 
-This package implements a robust fitting algorithm that extends the odd ratio weighted mean method from [Artigau et al. (2021)](https://ui.adsabs.harvard.edu/abs/2021AJ....162..144A) to linear and polynomial regression. The algorithm iteratively down-weights data points that are likely to be outliers while preserving proper statistical uncertainties.
+This package implements a robust fitting algorithm that extends the odd ratio weighted mean method from Appendix A of [Artigau et al. (2022)](https://ui.adsabs.harvard.edu/abs/2022AJ....164...84A) to linear and polynomial regression. The algorithm iteratively down-weights data points that are likely to be outliers while preserving proper statistical uncertainties.
 
 ## 🚀 Key Features
 
@@ -17,11 +17,7 @@ This package implements a robust fitting algorithm that extends the odd ratio we
 
 ## 📦 Installation
 
-```bash
-pip install odd_ratio_linfit
-```
-
-Or install from source:
+Clone and install from source:
 ```bash
 git clone https://github.com/eartigau/odd_ratio_linfit.git
 cd odd_ratio_linfit
@@ -196,22 +192,22 @@ Perform robust polynomial regression.
 If you use this method in your research, please cite:
 
 ```bibtex
-@ARTICLE{2021AJ....162..144A,
+@ARTICLE{2022AJ....164...84A,
        author = {{Artigau}, {\'E}tienne and {Cadieux}, Charles and {Cook}, Neil J. and
          {Doyon}, Ren{\'e} and {Vandal}, Thomas and {Donati}, Jean-Fran{\c{c}}ois and
          {Moutou}, Claire and {Delfosse}, Xavier and {Fouqu{\'e}}, Pascal and
-         {Collier Cameron}, Andrew and {others}},
-        title = "{Line-by-line Velocity Measurements: An Outlier-resistant Method for Precision Velocimetry}",
+         {Collier Cameron}, Andrew and others},
+        title = "{Line-by-line Velocity Measurements: an Outlier-resistant Method for Precision Velocimetry}",
       journal = {\aj},
-         year = 2021,
-        month = oct,
-       volume = {162},
-       number = {4},
-          eid = {144},
-        pages = {144},
-          doi = {10.3847/1538-3881/ac096d},
+         year = 2022,
+        month = sep,
+       volume = {164},
+       number = {3},
+          eid = {84},
+        pages = {84},
+          doi = {10.3847/1538-3881/ac7f2c},
 archivePrefix = {arXiv},
-       eprint = {2106.10092},
+       eprint = {2207.13524},
 }
 ```
 
