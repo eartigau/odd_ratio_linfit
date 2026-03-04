@@ -650,21 +650,32 @@ def demo_convergence():
     
     ax = axes[0]
     a_diff = np.abs(np.array(a_history) - a_final)
-    # Avoid log(0) by setting final point to a small value
-    a_diff[-1] = 1e-16
-    ax.semilogy(iterations[:-1], a_diff[:-1], 'o-', color='#2E86AB', lw=2, markersize=8)
+    # Find last iteration above 1e-10 threshold
+    a_valid = a_diff[:-1] >= 1e-10
+    if np.any(a_valid):
+        a_cutoff = np.where(a_valid)[0][-1] + 1
+    else:
+        a_cutoff = len(a_diff) - 1
+    ax.semilogy(iterations[:a_cutoff], a_diff[:a_cutoff], 'o-', color='#2E86AB', lw=2, markersize=8)
     ax.set_xlabel('Iteration')
     ax.set_ylabel('|a - a_final|')
     ax.set_title(f'Intercept Convergence (final a = {a_final:.4f})')
+    ax.set_ylim(bottom=1e-10)
     ax.grid(True, alpha=0.3)
     
     ax = axes[1]
     b_diff = np.abs(np.array(b_history) - b_final)
-    b_diff[-1] = 1e-16
-    ax.semilogy(iterations[:-1], b_diff[:-1], 'o-', color='#2E86AB', lw=2, markersize=8)
+    # Find last iteration above 1e-10 threshold
+    b_valid = b_diff[:-1] >= 1e-10
+    if np.any(b_valid):
+        b_cutoff = np.where(b_valid)[0][-1] + 1
+    else:
+        b_cutoff = len(b_diff) - 1
+    ax.semilogy(iterations[:b_cutoff], b_diff[:b_cutoff], 'o-', color='#2E86AB', lw=2, markersize=8)
     ax.set_xlabel('Iteration')
     ax.set_ylabel('|b - b_final|')
     ax.set_title(f'Slope Convergence (final b = {b_final:.4f})')
+    ax.set_ylim(bottom=1e-10)
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
