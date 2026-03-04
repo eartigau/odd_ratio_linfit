@@ -690,17 +690,17 @@ def demo_heteroscedastic():
     
     np.random.seed(42)
     
-    # Generate data with uniform uncertainties
+    # Generate data with heteroscedastic (varying) uncertainties
     n_points = 100
     true_a, true_b = 2.0, 0.5
-    noise_level = 0.5
     
     x = np.linspace(0, 10, n_points)
-    yerr = np.ones(n_points) * noise_level
+    # Uncertainties vary from 0.3 to 2.0 across the x range
+    yerr = 0.3 + 1.7 * (x / x.max())
     
-    # Generate data following the true line
+    # Generate data following the true line with heteroscedastic noise
     y_true = true_a + true_b * x
-    y = y_true + np.random.normal(0, noise_level, n_points)
+    y = y_true + np.random.normal(0, 1, n_points) * yerr
     
     # Add outliers at specific sigma levels: 3, 4, 5, 8, and 10 sigma
     # These span the transition zone where weights go from ~1 to ~0
@@ -708,7 +708,7 @@ def demo_heteroscedastic():
     outlier_indices = [10, 30, 50, 70, 90]  # Spread across x range
     
     for idx, sigma in zip(outlier_indices, sigma_levels):
-        y[idx] = y_true[idx] + sigma * noise_level
+        y[idx] = y_true[idx] + sigma * yerr[idx]
     
     # Fit with robust method
     a_rob, a_rob_err, b_rob, b_rob_err, weights = orf.linear(
@@ -753,7 +753,7 @@ def demo_heteroscedastic():
     
     ax.set_xlabel('x')
     ax.set_ylabel('y')
-    ax.set_title('Outliers at 3σ, 4σ, 5σ, 8σ, and 10σ')
+    ax.set_title('Heteroscedastic errors (σ = 0.3 to 2.0) with outliers at 3σ, 4σ, 5σ, 8σ, 10σ')
     ax.legend(loc='upper left')
     ax.grid(True, alpha=0.3)
     

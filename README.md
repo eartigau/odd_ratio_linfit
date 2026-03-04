@@ -305,18 +305,26 @@ The uncertainties returned by `orf.linear` are **statistically meaningful** and 
 - For each realization: fit with both ORF and naive WLS, record (a, σ_a, b, σ_b)
 - Compare actual scatter across realizations to mean reported uncertainties
 
+#### Theoretical Minimum Scatter
+
+The **theoretical scatter** represents the minimum achievable uncertainty, derived from the covariance matrix of the weighted least squares estimator assuming no outliers:
+
+$$\text{Cov}(\hat{\beta}) = (X^T W X)^{-1}$$
+
+where $X$ is the design matrix and $W = \text{diag}(1/\sigma_i^2)$ is the weight matrix. The theoretical standard deviation for each parameter is $\sigma_{\text{theory}} = \sqrt{\text{diag}(\text{Cov})}$. This is the **Cramér-Rao lower bound**—no unbiased estimator can achieve smaller variance. A method achieving this bound is called *efficient*.
+
 #### Results: ORF vs Naive WLS
 
-| Parameter | Method | Actual Scatter | Reported Error | Ratio |
-|-----------|--------|----------------|----------------|-------|
-| Intercept (a) | **ORF** | 0.105 | 0.102 | **1.03** ✓ |
-| Intercept (a) | Naive | 0.465 | 0.099 | **4.69** ✗ |
-| Slope (b) | **ORF** | 0.0180 | 0.0176 | **1.02** ✓ |
-| Slope (b) | Naive | 0.0828 | 0.0172 | **4.83** ✗ |
+| Parameter | Method | Theoretical | Actual Scatter | Reported Error | Actual/Theory |
+|-----------|--------|-------------|----------------|----------------|---------------|
+| Intercept (a) | **ORF** | 0.099 | 0.105 | 0.102 | **1.06** ✓ |
+| Intercept (a) | Naive | 0.099 | 0.465 | 0.099 | **4.69** ✗ |
+| Slope (b) | **ORF** | 0.0171 | 0.0180 | 0.0176 | **1.05** ✓ |
+| Slope (b) | Naive | 0.0171 | 0.0828 | 0.0172 | **4.84** ✗ |
 
 **Interpretation:**
-- **Ratio ≈ 1.0** means reported uncertainties are correct
-- **Ratio >> 1** means uncertainties are severely underestimated
+- **Actual/Theory ≈ 1.0** means the method achieves near-optimal efficiency
+- **Actual/Theory >> 1** means the method is severely degraded by outliers
 
 ![Uncertainty Validation](plots/uncertainty_validation.png)
 
