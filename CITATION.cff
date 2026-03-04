@@ -1,0 +1,58 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the software and the original paper."
+title: "Odd Ratio Linear Fit"
+version: 1.0.0
+date-released: 2024-01-01
+url: "https://github.com/eartigau/odd_ratio_linfit"
+repository-code: "https://github.com/eartigau/odd_ratio_linfit"
+license: MIT
+type: software
+authors:
+  - family-names: "Artigau"
+    given-names: "Étienne"
+    email: "etienne.artigau@umontreal.ca"
+    affiliation: "Université de Montréal / Institut de Recherche sur les Exoplanètes"
+    orcid: "https://orcid.org/0000-0003-3506-5667"
+keywords:
+  - linear regression
+  - robust fitting
+  - outlier rejection
+  - mixture model
+  - astronomy
+  - radial velocity
+abstract: >-
+  Robust linear regression using a Gaussian mixture model for outlier 
+  rejection. This package implements a robust fitting algorithm based on 
+  the odd ratio weighted mean method, which iteratively down-weights data 
+  points that are likely to be outliers while preserving proper statistical 
+  uncertainties.
+references:
+  - type: article
+    authors:
+      - family-names: "Artigau"
+        given-names: "Étienne"
+      - family-names: "Cadieux"
+        given-names: "Charles"
+      - family-names: "Cook"
+        given-names: "Neil J."
+      - family-names: "Doyon"
+        given-names: "René"
+      - family-names: "Vandal"
+        given-names: "Thomas"
+      - family-names: "Donati"
+        given-names: "Jean-François"
+      - family-names: "Moutou"
+        given-names: "Claire"
+      - family-names: "Delfosse"
+        given-names: "Xavier"
+      - family-names: "Fouqué"
+        given-names: "Pascal"
+      - family-names: "Collier Cameron"
+        given-names: "Andrew"
+    title: "Line-by-line Velocity Measurements: An Outlier-resistant Method for Precision Velocimetry"
+    journal: "The Astronomical Journal"
+    year: 2021
+    volume: 162
+    issue: 4
+    pages: 144
+    doi: "10.3847/1538-3881/ac096d"

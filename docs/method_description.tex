@@ -1,0 +1,177 @@
+% =============================================================================
+% Odd Ratio Linear Fit - LaTeX Description for Papers
+% =============================================================================
+% This file contains a description of the odd ratio linear fit method
+% suitable for copy-pasting into the Methods section of a scientific paper.
+%
+% Reference: Artigau et al. (2021), AJ, 162, 144
+% =============================================================================
+
+% -----------------------------------------------------------------------------
+% OPTION 1: Compact version (~150 words)
+% Use this for papers with strict space constraints
+% -----------------------------------------------------------------------------
+
+% \subsection{Robust Linear Fitting}
+%
+% We performed linear regression using the odd ratio mixture model method
+% \citep{Artigau2021}, which is robust to outliers. This approach models each
+% data point as coming from either a Gaussian distribution centered on the
+% true model (valid measurements) or a uniform background distribution
+% (outliers). For each point with residual $r_i$ and uncertainty $\sigma_i$,
+% the probability of being valid is computed as:
+% \begin{equation}
+%     p_i = 1 - \frac{f_0}{(1-f_0) \exp\left(-r_i^2/2\sigma_i^2\right) + f_0}
+% \end{equation}
+% where $f_0 = 2 \times 10^{-4}$ is the prior probability that any point is
+% an outlier. The fit is performed iteratively: weights $w_i = p_i/\sigma_i^2$
+% are computed from the current fit, then weighted least squares is applied
+% with these weights, repeating until convergence (typically 3--5 iterations).
+% This method avoids arbitrary sigma-clipping thresholds while preserving
+% proper error propagation.
+
+
+% -----------------------------------------------------------------------------
+% OPTION 2: Standard version (~300 words)
+% Recommended for most papers
+% -----------------------------------------------------------------------------
+
+\subsection{Robust Linear Fitting with Mixture Model}
+\label{sec:odd_ratio_fit}
+
+We employed the odd ratio mixture model method \citep{Artigau2021} for robust
+linear regression. Unlike traditional sigma-clipping approaches that use hard
+thresholds to reject outliers, this method uses a probabilistic model that
+naturally down-weights anomalous points while preserving proper statistical
+uncertainties.
+
+The algorithm models each measurement as arising from a two-component mixture:
+valid measurements are drawn from a Gaussian distribution centered on the true
+model, while outliers come from a uniform background distribution. Given a
+linear model $y = a + bx$ and residual $r_i = y_i - (a + bx_i)$ for point $i$
+with measurement uncertainty $\sigma_i$, the posterior probability that the
+point is a valid measurement is:
+\begin{equation}
+    p_{\mathrm{valid},i} = 1 - \frac{f_0}{(1-f_0) \exp\left(-r_i^2 / 2\sigma_i^2\right) + f_0}
+    \label{eq:odd_ratio}
+\end{equation}
+where $f_0$ is the prior probability that any given point is an outlier. We
+adopted $f_0 = 2 \times 10^{-4}$ following \citet{Artigau2021}.
+
+The fitting procedure is iterative:
+\begin{enumerate}
+    \item Initialize with standard weighted least squares using weights $w_i = 1/\sigma_i^2$
+    \item Compute residuals from the current best-fit model
+    \item Calculate $p_{\mathrm{valid},i}$ for each point using Equation~\ref{eq:odd_ratio}
+    \item Update weights to $w_i = p_{\mathrm{valid},i} / \sigma_i^2$
+    \item Re-fit using weighted least squares with the updated weights
+    \item Repeat steps 2--5 until convergence
+\end{enumerate}
+
+The algorithm typically converges in 3--5 iterations. Parameter uncertainties
+are computed from the weighted covariance matrix, where weights reflect the
+probability of each point being valid. This approach provides several
+advantages over sigma-clipping: it avoids arbitrary threshold choices, allows
+points to be partially down-weighted rather than completely rejected, and
+maintains proper error propagation throughout.
+
+The method is implemented in the \texttt{odd\_ratio\_linfit} Python package\footnote{%
+    \url{https://github.com/eartigau/odd_ratio_linfit}}.
+
+
+% -----------------------------------------------------------------------------
+% OPTION 3: Extended version with mathematical details (~500 words)
+% Use when space permits or for methodology-focused papers
+% -----------------------------------------------------------------------------
+
+% \subsection{Robust Linear Fitting with Odd Ratio Mixture Model}
+% \label{sec:odd_ratio_extended}
+%
+% We employed a robust linear fitting method based on the odd ratio mixture
+% model introduced by \citet{Artigau2021}. This approach treats outlier
+% rejection as a Bayesian inference problem rather than applying hard
+% thresholds, providing a principled framework that maintains proper
+% statistical uncertainties.
+%
+% \subsubsection{Mixture Model Formulation}
+%
+% Consider fitting a linear model $y = a + bx$ to data $\{x_i, y_i, \sigma_i\}$
+% where $\sigma_i$ is the measurement uncertainty. We model each data point
+% as arising from a two-component mixture:
+% \begin{equation}
+%     P(y_i | x_i, a, b) = (1-f_0) \cdot \mathcal{N}(y_i | a+bx_i, \sigma_i) + f_0 \cdot P_{\mathrm{outlier}}
+% \end{equation}
+% where $\mathcal{N}$ denotes a Gaussian distribution, $f_0$ is the prior
+% probability that any point is an outlier, and $P_{\mathrm{outlier}}$ represents
+% the outlier distribution (assumed to be uniform and broad).
+%
+% For a point with residual $r_i = y_i - (a + bx_i)$, the posterior probability
+% that it is a valid measurement (not an outlier) is:
+% \begin{equation}
+%     p_{\mathrm{valid},i} = \frac{(1-f_0) \exp\left(-r_i^2/2\sigma_i^2\right)}
+%         {(1-f_0) \exp\left(-r_i^2/2\sigma_i^2\right) + f_0}
+%     \label{eq:p_valid}
+% \end{equation}
+%
+% Following \citet{Artigau2021}, we adopt $f_0 = 2 \times 10^{-4}$. This value
+% implies that roughly 1 in 5000 points is expected to be an outlier \emph{a priori},
+% which is conservative for most astronomical datasets. Points deviating by
+% $\gtrsim 3.5\sigma$ are significantly down-weighted.
+%
+% \subsubsection{Iterative Fitting Algorithm}
+%
+% The fitting proceeds iteratively:
+% \begin{enumerate}
+%     \item \textbf{Initialization}: Perform standard weighted least squares
+%           with $w_i = 1/\sigma_i^2$ to obtain initial estimates $\hat{a}$, $\hat{b}$.
+%     \item \textbf{E-step}: Compute $p_{\mathrm{valid},i}$ for each point
+%           using Equation~\ref{eq:p_valid} with current parameter estimates.
+%     \item \textbf{M-step}: Update the model parameters using weighted least
+%           squares with weights $w_i = p_{\mathrm{valid},i}/\sigma_i^2$:
+%           \begin{align}
+%               \hat{b} &= \frac{\sum w_i (x_i-\bar{x})(y_i-\bar{y})}{\sum w_i (x_i-\bar{x})^2} \\
+%               \hat{a} &= \bar{y} - \hat{b}\bar{x}
+%           \end{align}
+%           where $\bar{x} = \sum w_i x_i / \sum w_i$ and similarly for $\bar{y}$.
+%     \item \textbf{Convergence check}: If the relative change in parameters
+%           is below a threshold (default: $10^{-2}$ times the parameter uncertainty),
+%           stop; otherwise return to step 2.
+% \end{enumerate}
+%
+% The algorithm typically converges in 3--5 iterations. Parameter uncertainties
+% are derived from the weighted covariance matrix:
+% \begin{align}
+%     \sigma_a^2 &= \frac{\sum w_i x_i^2}{\Delta} \\
+%     \sigma_b^2 &= \frac{\sum w_i}{\Delta}
+% \end{align}
+% where $\Delta = (\sum w_i)(\sum w_i x_i^2) - (\sum w_i x_i)^2$.
+%
+% This method offers key advantages over sigma-clipping: (1) no arbitrary
+% threshold selection, (2) smooth weighting allows partial down-weighting
+% of marginal points, and (3) proper error propagation accounting for
+% effective sample size reduction.
+
+
+% -----------------------------------------------------------------------------
+% Bibliography entry
+% -----------------------------------------------------------------------------
+% Add this to your .bib file:
+%
+% @ARTICLE{Artigau2021,
+%        author = {{Artigau}, {\'E}tienne and {Cadieux}, Charles and {Cook}, Neil J. and
+%          {Doyon}, Ren{\'e} and {Vandal}, Thomas and {Donati}, Jean-Fran{\c{c}}ois and
+%          {Moutou}, Claire and {Delfosse}, Xavier and {Fouqu{\'e}}, Pascal and
+%          {Collier Cameron}, Andrew and others},
+%         title = "{Line-by-line Velocity Measurements: An Outlier-resistant Method for Precision Velocimetry}",
+%       journal = {\aj},
+%          year = 2021,
+%         month = oct,
+%        volume = {162},
+%        number = {4},
+%           eid = {144},
+%         pages = {144},
+%           doi = {10.3847/1538-3881/ac096d},
+% archivePrefix = {arXiv},
+%        eprint = {2106.10092},
+% }
+

@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "odd_ratio_linfit"
+version = "1.0.0"
+description = "Robust linear regression using a Gaussian mixture model for outlier rejection"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Étienne Artigau", email = "etienne.artigau@umontreal.ca"}
+]
+maintainers = [
+    {name = "Étienne Artigau", email = "etienne.artigau@umontreal.ca"}
+]
+keywords = [
+    "linear regression",
+    "robust fitting",
+    "outlier rejection",
+    "mixture model",
+    "weighted least squares",
+    "astronomy",
+    "radial velocity"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "matplotlib>=3.5",
+]
+docs = [
+    "sphinx>=5.0",
+    "sphinx-rtd-theme>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/eartigau/odd_ratio_linfit"
+Documentation = "https://github.com/eartigau/odd_ratio_linfit#readme"
+Repository = "https://github.com/eartigau/odd_ratio_linfit.git"
+Issues = "https://github.com/eartigau/odd_ratio_linfit/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["odd_ratio_linfit*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=odd_ratio_linfit --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["odd_ratio_linfit"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+]
