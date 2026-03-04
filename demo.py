@@ -145,83 +145,146 @@ def demo_linear_fit_comparison():
 
 def demo_weighted_mean():
     """
-    Demonstrate the orf.mean function for robust averaging.
+    Demonstrate the orf.mean function for robust averaging with Monte Carlo validation.
+    Shows comparison between ORF and naive weighted mean with histograms.
     """
     print("\n" + "=" * 60)
-    print("Demo 2: Robust Weighted Mean")
+    print("Demo 2: Robust Weighted Mean - Monte Carlo Validation")
     print("=" * 60)
     
-    # Generate data with outliers
+    # Monte Carlo parameters
     n_points = 10000
     true_value = 10.0
     noise_level = 1.0
+    n_realizations = 1000
+    outlier_fraction = 0.10  # 10% outliers
     
-    values = np.random.normal(true_value, noise_level, n_points)
-    errors = np.ones(n_points) * noise_level
+    # Expected uncertainty from first principles: sigma / sqrt(N)
+    expected_err = noise_level / np.sqrt(n_points)
     
-    # Add outliers (10%)
-    n_outliers = 1000
-    outlier_idx = np.random.choice(n_points, n_outliers, replace=False)
-    values[outlier_idx] = values[outlier_idx] + np.random.choice([-1, 1], n_outliers) * np.random.uniform(10, 30, n_outliers)
+    # Storage for results
+    rob_means = []
+    rob_errs = []
+    naive_means = []
+    naive_errs = []
     
-    # Standard weighted mean
-    w = 1.0 / errors**2
-    std_mean = np.sum(values * w) / np.sum(w)
-    std_err = np.sqrt(1.0 / np.sum(w))
+    print(f"\nRunning {n_realizations} Monte Carlo realizations...")
+    print(f"Each realization: {n_points} points, {int(outlier_fraction*100)}% outliers")
+    print(f"Expected uncertainty (σ/√N): {expected_err:.4f}")
     
-    # Robust mean
-    rob_mean, rob_err = orf.mean(values, errors)
+    for i in range(n_realizations):
+        # Generate data
+        values = np.random.normal(true_value, noise_level, n_points)
+        errors = np.ones(n_points) * noise_level
+        
+        # Add outliers
+        n_outliers = int(outlier_fraction * n_points)
+        outlier_idx = np.random.choice(n_points, n_outliers, replace=False)
+        values[outlier_idx] += np.random.choice([-1, 1], n_outliers) * np.random.uniform(10, 30, n_outliers)
+        
+        # Robust mean
+        rob_mean, rob_err = orf.mean(values, errors)
+        rob_means.append(rob_mean)
+        rob_errs.append(rob_err)
+        
+        # Naive weighted mean
+        w = 1.0 / errors**2
+        naive_mean = np.sum(values * w) / np.sum(w)
+        naive_err = np.sqrt(1.0 / np.sum(w))
+        naive_means.append(naive_mean)
+        naive_errs.append(naive_err)
     
-    # Simple median for comparison
-    median_val = np.median(values)
+    rob_means = np.array(rob_means)
+    rob_errs = np.array(rob_errs)
+    naive_means = np.array(naive_means)
+    naive_errs = np.array(naive_errs)
     
-    print(f"\nTrue value: {true_value:.3f}")
-    print(f"Standard weighted mean: {std_mean:.3f} ± {std_err:.3f}")
-    print(f"Robust (odd ratio) mean: {rob_mean:.3f} ± {rob_err:.3f}")
-    print(f"Median: {median_val:.3f}")
+    # Compute statistics
+    rob_scatter = np.std(rob_means)
+    rob_bias = np.mean(rob_means) - true_value
+    naive_scatter = np.std(naive_means)
+    naive_bias = np.mean(naive_means) - true_value
     
-    # Create figure
+    print(f"\nResults from {n_realizations} realizations:")
+    print(f"\n{'='*50}")
+    print("ROBUST (ORF) METHOD:")
+    print(f"  Mean recovered: {np.mean(rob_means):.4f}")
+    print(f"  Bias from truth: {rob_bias:.4f}")
+    print(f"  Actual scatter: {rob_scatter:.4f}")
+    print(f"  Mean reported error: {np.mean(rob_errs):.4f}")
+    print(f"  Ratio (scatter/error): {rob_scatter/np.mean(rob_errs):.2f}")
+    print(f"\n{'='*50}")
+    print("NAIVE WEIGHTED MEAN:")
+    print(f"  Mean recovered: {np.mean(naive_means):.4f}")
+    print(f"  Bias from truth: {naive_bias:.4f}")
+    print(f"  Actual scatter: {naive_scatter:.4f}")
+    print(f"  Mean reported error: {np.mean(naive_errs):.4f}")
+    print(f"  Ratio (scatter/error): {naive_scatter/np.mean(naive_errs):.2f}")
+    
+    # Create figure with histograms
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
-    # Left panel: Histogram
+    # Left panel: Overlaid histograms of recovered means
     ax = axes[0]
-    bins = np.linspace(values.min(), values.max(), 30)
-    ax.hist(values, bins=bins, alpha=0.7, color='#2E86AB', edgecolor='black')
-    ax.axvline(true_value, color='black', linestyle='--', lw=2, label=f'True = {true_value:.2f}')
-    ax.axvline(std_mean, color='#F28123', linestyle='-', lw=2, label=f'Standard = {std_mean:.2f}')
-    ax.axvline(rob_mean, color='#28A745', linestyle='-', lw=2, label=f'Robust = {rob_mean:.2f}')
-    ax.axvline(median_val, color='#6C757D', linestyle=':', lw=2, label=f'Median = {median_val:.2f}')
     
-    ax.set_xlabel('Value')
-    ax.set_ylabel('Count')
-    ax.set_title('Distribution with Outliers')
-    ax.legend()
+    # Determine common bin range
+    all_means = np.concatenate([rob_means, naive_means])
+    bin_min = min(all_means.min(), true_value - 4*naive_scatter)
+    bin_max = max(all_means.max(), true_value + 4*naive_scatter)
+    bins = np.linspace(bin_min, bin_max, 50)
+    
+    # Plot histograms
+    ax.hist(naive_means, bins=bins, density=True, alpha=0.5, color='#E94F37',
+            edgecolor='#E94F37', linewidth=1.5, label=f'Naive (σ={naive_scatter:.4f})')
+    ax.hist(rob_means, bins=bins, density=True, alpha=0.5, color='#2E86AB',
+            edgecolor='#2E86AB', linewidth=1.5, label=f'ORF (σ={rob_scatter:.4f})')
+    
+    # Overlay theoretical Gaussians
+    x_gauss = np.linspace(bin_min, bin_max, 200)
+    # Theoretical Gaussian for ORF (centered on truth, width = expected_err)
+    gauss_theory = np.exp(-(x_gauss - true_value)**2 / (2 * expected_err**2)) / (expected_err * np.sqrt(2*np.pi))
+    ax.plot(x_gauss, gauss_theory, 'k-', lw=2, label=f'Theory N(μ, σ/√N)\nσ/√N = {expected_err:.4f}')
+    
+    ax.axvline(true_value, color='black', linestyle='--', lw=2, alpha=0.7)
+    ax.set_xlabel('Recovered Mean')
+    ax.set_ylabel('Probability Density')
+    ax.set_title(f'Distribution of Recovered Means ({n_realizations} realizations)')
+    ax.legend(loc='upper right')
     ax.grid(True, alpha=0.3)
     
-    # Right panel: Error comparison
+    # Right panel: Comparison bar chart
     ax = axes[1]
-    methods = ['Standard\nWeighted Mean', 'Robust\n(Odd Ratio)', 'Median']
-    estimates = [std_mean, rob_mean, median_val]
-    method_errors = [std_err, rob_err, noise_level / np.sqrt(n_points)]  # MAD-based for median
     
-    # Calculate bias from true value
-    biases = [np.abs(est - true_value) for est in estimates]
-    
+    methods = ['Naive\nWeighted Mean', 'Robust\n(ORF)', 'Theory\n(σ/√N)']
     x_pos = np.arange(len(methods))
-    bars = ax.bar(x_pos, biases, color=['#F28123', '#28A745', '#6C757D'], 
-                  edgecolor='black', alpha=0.8)
+    width = 0.35
+    
+    scatters = [naive_scatter, rob_scatter, expected_err]
+    biases = [np.abs(naive_bias), np.abs(rob_bias), 0]
+    
+    bars1 = ax.bar(x_pos - width/2, scatters, width, label='Scatter (std)', 
+                   color=['#E94F37', '#2E86AB', '#333333'], alpha=0.8, edgecolor='black')
+    bars2 = ax.bar(x_pos + width/2, biases, width, label='|Bias|',
+                   color=['#E94F37', '#2E86AB', '#333333'], alpha=0.4, edgecolor='black', hatch='///')
     
     ax.set_xticks(x_pos)
     ax.set_xticklabels(methods)
-    ax.set_ylabel('|Bias| from True Value')
-    ax.set_title('Accuracy Comparison')
+    ax.set_ylabel('Value')
+    ax.set_title('Scatter and Bias Comparison')
+    ax.legend()
     ax.grid(True, alpha=0.3, axis='y')
     
-    # Add value labels on bars
-    for bar, bias in zip(bars, biases):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
-                f'{bias:.3f}', ha='center', va='bottom', fontsize=11)
+    # Add value labels
+    for bar, val in zip(bars1, scatters):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.001,
+                f'{val:.4f}', ha='center', va='bottom', fontsize=9)
+    for bar, val in zip(bars2, biases):
+        if val > 0:
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.001,
+                    f'{val:.4f}', ha='center', va='bottom', fontsize=9)
     
+    plt.suptitle(f'Weighted Mean: {n_points} points, {int(outlier_fraction*100)}% outliers', 
+                 fontsize=14, y=1.02)
     plt.tight_layout()
     plt.savefig(PLOT_DIR / 'weighted_mean_comparison.png')
     plt.savefig(PLOT_DIR / 'weighted_mean_comparison.pdf')

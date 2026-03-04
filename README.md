@@ -123,13 +123,19 @@ print(f"Robust mean: {mean:.2f} ± {err:.2f}")  # ~10.0, ignoring outliers
 
 ### Comparison with Standard Methods
 
-**Simulation setup:**
-- 10,000 measurements drawn from N(10, 1) with uniform errors σ = 1
-- 10% of points replaced with outliers drawn from U(-50, 50)
-- Comparison: standard weighted mean, median, and odd ratio mean
+**Monte Carlo simulation setup:**
+- 1000 independent realizations
+- Each realization: 10,000 measurements drawn from N(10, 1) with σ = 1
+- 10% outliers (1000 points shifted by ±10 to ±30)
+- Compare: naive weighted mean vs ORF robust mean
 - **Expected uncertainty from first principles:** σ/√N = 1/√10000 = 0.01
 
-The odd ratio method provides an accurate estimate of the mean even with 10% outliers, outperforming both standard weighted mean and median. The robust method achieves uncertainties close to the theoretical √N improvement expected for uncontaminated data.
+| Method | Scatter | |Bias| | Scatter/Error Ratio |
+|--------|---------|-------|---------------------|
+| **ORF** | 0.010 | 0.001 | **0.97** ✓ |
+| Naive | 0.065 | 0.005 | **6.5** ✗ |
+
+The ORF method achieves the theoretical σ/√N uncertainty even with 10% outliers, while naive weighted mean has ~6× larger scatter and underestimates uncertainty by the same factor.
 
 ![Weighted Mean Comparison](plots/weighted_mean_comparison.png)
 
@@ -289,22 +295,31 @@ The uncertainties returned by `orf.linear` are **statistically meaningful** and 
 - For each realization: fit with both ORF and naive WLS, record (a, σ_a, b, σ_b)
 - Compare actual scatter across realizations to mean reported uncertainties
 
+#### Results: ORF vs Naive WLS
+
+| Parameter | Method | Actual Scatter | Reported Error | Ratio |
+|-----------|--------|----------------|----------------|-------|
+| Intercept (a) | **ORF** | 0.105 | 0.102 | **1.03** ✓ |
+| Intercept (a) | Naive | 0.465 | 0.099 | **4.69** ✗ |
+| Slope (b) | **ORF** | 0.0180 | 0.0176 | **1.02** ✓ |
+| Slope (b) | Naive | 0.0828 | 0.0172 | **4.83** ✗ |
+
+**Interpretation:**
+- **Ratio ≈ 1.0** means reported uncertainties are correct
+- **Ratio >> 1** means uncertainties are severely underestimated
+
 ![Uncertainty Validation](plots/uncertainty_validation.png)
 
 **Key findings - Robust ORF method:**
-- The **actual scatter** in recovered parameters matches the **reported uncertainties** (ratio ≈ 1.0)
-- Normalized residuals $(p - p_{\rm true})/\sigma_p$ follow a standard normal distribution N(0,1)
-- Parameters are **unbiased** - mean recovered values match truth
+- The **actual scatter** matches the **reported uncertainties** (ratio ≈ 1.0)
+- Normalized residuals $(p - p_{\rm true})/\sigma_p$ follow N(0,1)
+- Parameters are **unbiased**
 
 **Naive WLS completely fails:**
-- **Biased estimates** - the mean recovered intercept is significantly offset from truth
-- **Underestimated uncertainties** - reported errors are ~3-5× smaller than actual scatter
-- Normalized residuals have std >> 1, indicating severely underestimated errors
-- This means naive confidence intervals are **wrong** and will miss the true value far more often than expected
+- **Underestimated uncertainties by ~5×** - reported errors are far too small
+- If you use naive WLS with outliers, your 1σ confidence intervals will miss the true value ~80% of the time instead of 32%!
 
 ![Uncertainty Summary](plots/uncertainty_summary.png)
-
-The ratio of actual scatter to mean reported error is ~1.0 for ORF (correct uncertainties), but >>1 for naive WLS (underestimated uncertainties). This demonstrates why robust fitting is essential when outliers are present.
 
 *Reproduce with:* `python -c "from demo import demo_uncertainty_validation; demo_uncertainty_validation()"`
 
