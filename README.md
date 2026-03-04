@@ -55,7 +55,7 @@ y = 2.0 + 0.5 * x + np.random.normal(0, 0.5, len(x))
 yerr = np.ones(len(x)) * 0.5
 y[5], y[15], y[25] = 15.0, -5.0, 12.0  # Add outliers
 
-a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
+a, a_err, b, b_err = orf.linear(x, y, yerr)
 print(f"Intercept: {a:.3f} ± {a_err:.3f}")
 print(f"Slope: {b:.3f} ± {b_err:.3f}")
 ```
@@ -127,8 +127,9 @@ print(f"Robust mean: {mean:.2f} ± {err:.2f}")  # ~10.0, ignoring outliers
 - 100 measurements drawn from N(10, 1) with uniform errors σ = 1
 - 10% of points replaced with outliers drawn from U(-50, 50)
 - Comparison: standard weighted mean, median, and odd ratio mean
+- **Expected uncertainty from first principles:** σ/√N = 1/√100 = 0.1
 
-The odd ratio method provides an accurate estimate of the mean even with 10% outliers, outperforming both standard weighted mean and median.
+The odd ratio method provides an accurate estimate of the mean even with 10% outliers, outperforming both standard weighted mean and median. The robust method achieves uncertainties close to the theoretical √N improvement expected for uncontaminated data.
 
 ![Weighted Mean Comparison](plots/weighted_mean_comparison.png)
 
@@ -150,7 +151,7 @@ x = np.linspace(0, 10, 50)
 y = 2.0 + 0.5 * x + np.random.normal(0, 0.5, len(x))
 yerr = np.ones(len(x)) * 0.5
 
-a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
+a, a_err, b, b_err = orf.linear(x, y, yerr)
 print(f"Intercept: {a:.3f} ± {a_err:.3f}")
 print(f"Slope: {b:.3f} ± {b_err:.3f}")
 ```
@@ -225,7 +226,7 @@ y = 0.05*x**2 - 0.5*x + 3 + np.random.normal(0, 0.5, len(x))
 yerr = np.ones(len(x)) * 0.5
 
 # Quadratic fit: y = a0 + a1*x + a2*x^2
-coeffs, coeffs_err = orf.polyfit(x, y, yerr, degree=2)[:2]
+coeffs, coeffs_err = orf.polyfit(x, y, yerr, degree=2)
 print(f"Coefficients [a2, a1, a0]: {coeffs}")
 ```
 
@@ -309,6 +310,25 @@ When `orf.linear` returns `a = 2.05 ± 0.15`, you can trust that:
 
 ## 📚 API Reference
 
+### `orf.mean`
+
+```python
+orf.mean(value, error, odd_ratio=2e-4, nmax=10, conv_cut=1e-2)
+```
+
+Compute robust weighted mean.
+
+**Parameters:**
+- `value`: Values to average (1D array)
+- `error`: Uncertainties on values (1D array)
+- `odd_ratio`: Prior probability of outlier (default: 2e-4)
+- `nmax`: Maximum iterations (default: 10)
+- `conv_cut`: Convergence criterion (default: 1e-2)
+
+**Returns:**
+- `mean`: Robust weighted mean
+- `error`: Uncertainty on the mean
+
 ### `orf.linear`
 
 ```python
@@ -330,25 +350,6 @@ Perform robust linear regression $y = a + bx$.
 - `a, a_err`: Intercept and uncertainty
 - `b, b_err`: Slope and uncertainty
 - `weights` (optional): Probability each point is valid
-
-### `orf.mean`
-
-```python
-orf.mean(value, error, odd_ratio=2e-4, nmax=10, conv_cut=1e-2)
-```
-
-Compute robust weighted mean.
-
-**Parameters:**
-- `value`: Values to average (1D array)
-- `error`: Uncertainties on values (1D array)
-- `odd_ratio`: Prior probability of outlier
-- `nmax`: Maximum iterations
-- `conv_cut`: Convergence criterion
-
-**Returns:**
-- `mean`: Robust weighted mean
-- `error`: Uncertainty on the mean
 
 ### `orf.polyfit`
 

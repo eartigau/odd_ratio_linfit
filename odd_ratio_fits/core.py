@@ -219,7 +219,7 @@ def linear(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
     >>> y[5] = 20.0
     >>> y[15] = -10.0
     >>> y[25] = 15.0
-    >>> a, a_err, b, b_err = odd_ratio_linfit(x, y, yerr)[:4]
+    >>> a, a_err, b, b_err = linear(x, y, yerr)
     >>> print(f"Intercept: {a:.3f} ± {a_err:.3f} (true: {true_a})")
     >>> print(f"Slope: {b:.3f} ± {b_err:.3f} (true: {true_b})")
     """
@@ -363,7 +363,7 @@ def polyfit(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
     >>> x = np.linspace(0, 10, 100)
     >>> y = 1 + 2*x + 0.5*x**2 + np.random.normal(0, 1, len(x))
     >>> yerr = np.ones(len(x))
-    >>> coeffs, coeffs_err = odd_ratio_polyfit(x, y, yerr, degree=2)[:2]
+    >>> coeffs, coeffs_err = polyfit(x, y, yerr, degree=2)
     """
     # Deal with NaNs
     keep = np.isfinite(x) & np.isfinite(y) & np.isfinite(yerr)

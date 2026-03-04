@@ -75,7 +75,7 @@ class TestLinear:
         y = true_a + true_b * x + np.random.normal(0, 0.5, len(x))
         yerr = np.ones(len(x)) * 0.5
         
-        a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
+        a, a_err, b, b_err = orf.linear(x, y, yerr)
         
         assert np.abs(a - true_a) < 3 * a_err
         assert np.abs(b - true_b) < 3 * b_err
@@ -93,7 +93,7 @@ class TestLinear:
         y[15] = -10.0
         y[25] = 15.0
         
-        a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
+        a, a_err, b, b_err = orf.linear(x, y, yerr)
         
         # Should still be close to true values
         assert np.abs(a - true_a) < 0.5
@@ -139,7 +139,7 @@ class TestLinear:
         y = np.array([2, 4, np.nan, 8, 10, 12, 14, 16])
         yerr = np.ones(len(x)) * 0.5
         
-        a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
+        a, a_err, b, b_err = orf.linear(x, y, yerr)
         
         assert np.isfinite(a)
         assert np.isfinite(b)
@@ -156,10 +156,10 @@ class TestPolyfit:
         yerr = np.ones(len(x)) * 0.5
         
         # Linear fit
-        a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
+        a, a_err, b, b_err = orf.linear(x, y, yerr)
         
         # Polynomial fit degree 1
-        coeffs, coeffs_err = orf.polyfit(x, y, yerr, degree=1)[:2]
+        coeffs, coeffs_err = orf.polyfit(x, y, yerr, degree=1)
         
         # Should match (coeffs is [b, a] in polyfit convention)
         assert np.abs(coeffs[0] - b) < 0.01
@@ -173,7 +173,7 @@ class TestPolyfit:
         y = np.polyval(true_coeffs, x) + np.random.normal(0, 0.5, len(x))
         yerr = np.ones(len(x)) * 0.5
         
-        coeffs, coeffs_err = orf.polyfit(x, y, yerr, degree=2)[:2]
+        coeffs, coeffs_err = orf.polyfit(x, y, yerr, degree=2)
         
         assert np.abs(coeffs[0] - true_coeffs[0]) < 0.05
         assert np.abs(coeffs[1] - true_coeffs[1]) < 0.2
@@ -189,7 +189,7 @@ class TestEdgeCases:
         y = np.array([2.0])
         yerr = np.array([0.1])
         
-        a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
+        a, a_err, b, b_err = orf.linear(x, y, yerr)
         
         assert np.isnan(a)
         assert np.isnan(b)
@@ -201,7 +201,7 @@ class TestEdgeCases:
         yerr = np.array([0.1, 0.0, 0.1, 0.1, 0.1])  # One zero error
         
         # Should not crash (zero errors become inf weights, but algorithm handles it)
-        a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
+        a, a_err, b, b_err = orf.linear(x, y, yerr)
         
         # Check that we get some result
         assert np.isfinite(a) or np.isnan(a)

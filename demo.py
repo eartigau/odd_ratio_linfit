@@ -264,7 +264,7 @@ def demo_varying_outlier_fraction():
                 y[outlier_idx] += np.random.choice([-1, 1], n_outliers) * np.random.uniform(5, 15, n_outliers)
             
             a_std, _, b_std, _ = standard_weighted_linfit(x, y, yerr)
-            a_rob, _, b_rob, _ = orf.linear(x, y, yerr)[:4]
+            a_rob, _, b_rob, _ = orf.linear(x, y, yerr)
             
             trial_std_a.append(a_std - true_a)
             trial_std_b.append(b_std - true_b)
@@ -554,6 +554,8 @@ def demo_heteroscedastic():
     
     This demo shows that outliers are identified based on their deviation
     in units of their own uncertainty (sigma), not absolute deviation.
+    It demonstrates the transition zone where points get progressively
+    down-weighted as their sigma deviation increases.
     """
     print("\n" + "=" * 60)
     print("Demo 7: Heteroscedastic Uncertainties")
@@ -561,33 +563,25 @@ def demo_heteroscedastic():
     
     np.random.seed(42)
     
-    # Generate data with varying uncertainties
-    n_points = 40
+    # Generate data with uniform uncertainties
+    n_points = 100
     true_a, true_b = 2.0, 0.5
+    noise_level = 0.5
     
     x = np.linspace(0, 10, n_points)
+    yerr = np.ones(n_points) * noise_level
     
-    # Create heteroscedastic errors: some points have large errors, some small
-    yerr = np.ones(n_points) * 0.3  # Base small errors
-    # Make some points have much larger uncertainties
-    large_err_idx = [5, 15, 25, 35]
-    yerr[large_err_idx] = 2.0  # Large errors
-    
-    # Generate data
+    # Generate data following the true line
     y_true = true_a + true_b * x
-    y = y_true + np.random.normal(0, 1, n_points) * yerr
+    y = y_true + np.random.normal(0, noise_level, n_points)
     
-    # Add two outliers with same ABSOLUTE deviation but different sigma deviations:
-    # Point A: small error bar, 5-sigma outlier  
-    # Point B: large error bar, 1-sigma "outlier" (really just scatter)
+    # Add outliers at specific sigma levels: 3, 4, 5, 8, and 10 sigma
+    # These span the transition zone where weights go from ~1 to ~0
+    sigma_levels = [3, 4, 5, 8, 10]
+    outlier_indices = [10, 30, 50, 70, 90]  # Spread across x range
     
-    outlier_small_err_idx = 10  # Small error bar point
-    outlier_large_err_idx = 15  # Large error bar point (already has large error)
-    
-    absolute_deviation = 3.0  # Same absolute deviation for both
-    
-    y[outlier_small_err_idx] = y_true[outlier_small_err_idx] + absolute_deviation  # ~10 sigma!
-    y[outlier_large_err_idx] = y_true[outlier_large_err_idx] + absolute_deviation  # ~1.5 sigma
+    for idx, sigma in zip(outlier_indices, sigma_levels):
+        y[idx] = y_true[idx] + sigma * noise_level
     
     # Fit with robust method
     a_rob, a_rob_err, b_rob, b_rob_err, weights = orf.linear(
@@ -600,40 +594,30 @@ def demo_heteroscedastic():
     
     print(f"\nTrue values: a = {true_a:.3f}, b = {true_b:.3f}")
     print(f"Robust fit:  a = {a_rob:.3f} ± {a_rob_err:.3f}, b = {b_rob:.3f} ± {b_rob_err:.3f}")
-    print(f"\nOutlier with small error bar (idx={outlier_small_err_idx}):")
-    print(f"  Absolute deviation: {residuals[outlier_small_err_idx]:.2f}")
-    print(f"  Sigma deviation: {sigma_dev[outlier_small_err_idx]:.1f}σ")
-    print(f"  Weight: {weights[outlier_small_err_idx]:.4f}")
-    print(f"\nPoint with large error bar (idx={outlier_large_err_idx}):")
-    print(f"  Absolute deviation: {residuals[outlier_large_err_idx]:.2f}")
-    print(f"  Sigma deviation: {sigma_dev[outlier_large_err_idx]:.1f}σ")
-    print(f"  Weight: {weights[outlier_large_err_idx]:.4f}")
+    print(f"\nOutlier weights by sigma level:")
+    for idx, sigma in zip(outlier_indices, sigma_levels):
+        print(f"  {sigma}σ outlier: weight = {weights[idx]:.4f}")
     
     # Create figure
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
-    # Left panel: Data with different error bar sizes
+    # Left panel: Data with outliers
     ax = axes[0]
     
     # Color by weight
     for i in range(n_points):
         color = plt.cm.RdYlGn(weights[i])
         ax.errorbar(x[i], y[i], yerr=yerr[i], fmt='o', color=color, 
-                   markersize=8, capsize=3, elinewidth=1.5, markeredgecolor='black',
-                   markeredgewidth=0.5)
+                   markersize=6, capsize=2, elinewidth=1, markeredgecolor='black',
+                   markeredgewidth=0.3, alpha=0.8)
     
-    # Highlight the two special points
-    ax.annotate(f'{sigma_dev[outlier_small_err_idx]:.1f}σ\nw={weights[outlier_small_err_idx]:.3f}',
-                xy=(x[outlier_small_err_idx], y[outlier_small_err_idx]),
-                xytext=(x[outlier_small_err_idx]+0.8, y[outlier_small_err_idx]+1),
-                fontsize=10, ha='left',
-                arrowprops=dict(arrowstyle='->', color='red'))
-    
-    ax.annotate(f'{sigma_dev[outlier_large_err_idx]:.1f}σ\nw={weights[outlier_large_err_idx]:.3f}',
-                xy=(x[outlier_large_err_idx], y[outlier_large_err_idx]),
-                xytext=(x[outlier_large_err_idx]+0.8, y[outlier_large_err_idx]+1.5),
-                fontsize=10, ha='left',
-                arrowprops=dict(arrowstyle='->', color='blue'))
+    # Annotate the outliers
+    for idx, sigma in zip(outlier_indices, sigma_levels):
+        ax.annotate(f'{sigma}σ\nw={weights[idx]:.2f}',
+                    xy=(x[idx], y[idx]),
+                    xytext=(x[idx]+0.3, y[idx]+0.5),
+                    fontsize=9, ha='left',
+                    arrowprops=dict(arrowstyle='->', color='gray', lw=0.5))
     
     # Plot fit
     x_fit = np.linspace(x.min(), x.max(), 100)
@@ -642,7 +626,7 @@ def demo_heteroscedastic():
     
     ax.set_xlabel('x')
     ax.set_ylabel('y')
-    ax.set_title('Heteroscedastic Data: Outliers Identified by σ, Not Absolute Value')
+    ax.set_title('Outliers at 3σ, 4σ, 5σ, 8σ, and 10σ')
     ax.legend(loc='upper left')
     ax.grid(True, alpha=0.3)
     
@@ -655,20 +639,20 @@ def demo_heteroscedastic():
     # Right panel: sigma deviation vs weight
     ax = axes[1]
     ax.scatter(np.abs(sigma_dev), weights, c=weights, cmap='RdYlGn', 
-               s=100, edgecolors='black', linewidth=0.5, vmin=0, vmax=1)
+               s=80, edgecolors='black', linewidth=0.5, vmin=0, vmax=1)
     
-    # Highlight special points
-    ax.scatter(np.abs(sigma_dev[outlier_small_err_idx]), weights[outlier_small_err_idx],
-               s=200, facecolors='none', edgecolors='red', linewidth=3, 
-               label='Small error bar point')
-    ax.scatter(np.abs(sigma_dev[outlier_large_err_idx]), weights[outlier_large_err_idx],
-               s=200, facecolors='none', edgecolors='blue', linewidth=3,
-               label='Large error bar point')
+    # Highlight the specific outliers
+    for idx, sigma in zip(outlier_indices, sigma_levels):
+        ax.scatter(np.abs(sigma_dev[idx]), weights[idx],
+                   s=150, facecolors='none', edgecolors='red', linewidth=2)
+        ax.annotate(f'{sigma}σ', 
+                    xy=(np.abs(sigma_dev[idx]), weights[idx]),
+                    xytext=(np.abs(sigma_dev[idx])+0.3, weights[idx]+0.05),
+                    fontsize=10)
     
     ax.set_xlabel('|Residual / σ| (sigma deviation)')
     ax.set_ylabel('Weight')
-    ax.set_title('Weight Depends on σ-Deviation, Not Absolute Deviation')
-    ax.legend()
+    ax.set_title('Weight Transition: 3σ→4σ→5σ→8σ→10σ')
     ax.grid(True, alpha=0.3)
     ax.set_xlim(-0.5, 12)
     
@@ -694,19 +678,25 @@ def demo_uncertainty_validation():
     
     np.random.seed(42)
     
-    n_points = 50
+    n_points = 100
     true_a, true_b = 2.0, 0.5
     n_realizations = 1000
-    outlier_fraction = 0.1
+    outlier_fraction = 0.05  # 5 outliers out of 100
     
     x = np.linspace(0, 10, n_points)
     yerr = np.ones(n_points) * 0.5
     
-    # Storage for results
+    # Storage for robust fit results
     a_values = []
     b_values = []
     a_errors = []
     b_errors = []
+    
+    # Storage for naive (standard WLS) fit results
+    a_values_naive = []
+    b_values_naive = []
+    a_errors_naive = []
+    b_errors_naive = []
     
     print(f"\nRunning {n_realizations} Monte Carlo realizations...")
     
@@ -720,30 +710,52 @@ def demo_uncertainty_validation():
             outlier_idx = np.random.choice(n_points, n_outliers, replace=False)
             y[outlier_idx] += np.random.choice([-1, 1], n_outliers) * np.random.uniform(5, 15, n_outliers)
         
-        # Fit
-        a, a_err, b, b_err = orf.linear(x, y, yerr)[:4]
-        
+        # Robust fit
+        a, a_err, b, b_err = orf.linear(x, y, yerr)
         a_values.append(a)
         b_values.append(b)
         a_errors.append(a_err)
         b_errors.append(b_err)
+        
+        # Naive fit (standard weighted least squares)
+        a_naive, a_err_naive, b_naive, b_err_naive = standard_weighted_linfit(x, y, yerr)
+        a_values_naive.append(a_naive)
+        b_values_naive.append(b_naive)
+        a_errors_naive.append(a_err_naive)
+        b_errors_naive.append(b_err_naive)
     
     a_values = np.array(a_values)
     b_values = np.array(b_values)
     a_errors = np.array(a_errors)
     b_errors = np.array(b_errors)
     
-    # Compute statistics
+    a_values_naive = np.array(a_values_naive)
+    b_values_naive = np.array(b_values_naive)
+    a_errors_naive = np.array(a_errors_naive)
+    b_errors_naive = np.array(b_errors_naive)
+    
+    # Compute statistics for robust fit
     a_scatter = np.std(a_values)
     b_scatter = np.std(b_values)
     a_mean_error = np.mean(a_errors)
     b_mean_error = np.mean(b_errors)
     
+    # Compute statistics for naive fit
+    a_scatter_naive = np.std(a_values_naive)
+    b_scatter_naive = np.std(b_values_naive)
+    a_mean_error_naive = np.mean(a_errors_naive)
+    b_mean_error_naive = np.mean(b_errors_naive)
+    
     # Compute normalized residuals (should be ~N(0,1) if errors are correct)
     a_normalized = (a_values - true_a) / a_errors
     b_normalized = (b_values - true_b) / b_errors
+    a_normalized_naive = (a_values_naive - true_a) / a_errors_naive
+    b_normalized_naive = (b_values_naive - true_b) / b_errors_naive
     
     print(f"\nResults from {n_realizations} realizations:")
+    print(f"\n{'='*60}")
+    print("ROBUST FIT (odd ratio method)")
+    print(f"{'='*60}")
     print(f"\nIntercept (a):")
     print(f"  True value: {true_a:.3f}")
     print(f"  Mean recovered: {np.mean(a_values):.3f}")
@@ -758,19 +770,39 @@ def demo_uncertainty_validation():
     print(f"  Mean reported error: {b_mean_error:.4f}")
     print(f"  Ratio (scatter/error): {b_scatter/b_mean_error:.3f} (should be ~1.0)")
     
-    print(f"\nNormalized residual statistics (should be ~N(0,1)):")
-    print(f"  Intercept: mean={np.mean(a_normalized):.3f}, std={np.std(a_normalized):.3f}")
-    print(f"  Slope:     mean={np.mean(b_normalized):.3f}, std={np.std(b_normalized):.3f}")
+    print(f"\n{'='*60}")
+    print("NAIVE FIT (standard weighted least squares)")
+    print(f"{'='*60}")
+    print(f"\nIntercept (a):")
+    print(f"  True value: {true_a:.3f}")
+    print(f"  Mean recovered: {np.mean(a_values_naive):.3f} (BIASED)")
+    print(f"  Actual scatter (std): {a_scatter_naive:.4f}")
+    print(f"  Mean reported error: {a_mean_error_naive:.4f}")
+    print(f"  Ratio (scatter/error): {a_scatter_naive/a_mean_error_naive:.3f} (>> 1 = underestimated!)")
     
-    # Create figure (2x2: histograms and normalized residuals)
-    fig, axes = plt.subplots(2, 2, figsize=(12, 9))
+    print(f"\nSlope (b):")
+    print(f"  True value: {true_b:.3f}")
+    print(f"  Mean recovered: {np.mean(b_values_naive):.3f}")
+    print(f"  Actual scatter (std): {b_scatter_naive:.4f}")
+    print(f"  Mean reported error: {b_mean_error_naive:.4f}")
+    print(f"  Ratio (scatter/error): {b_scatter_naive/b_mean_error_naive:.3f} (>> 1 = underestimated!)")
     
-    # Top row: intercept
+    print(f"\nNormalized residual statistics (should be ~N(0,1) if errors correct):")
+    print(f"  Robust intercept: mean={np.mean(a_normalized):.3f}, std={np.std(a_normalized):.3f}")
+    print(f"  Robust slope:     mean={np.mean(b_normalized):.3f}, std={np.std(b_normalized):.3f}")
+    print(f"  Naive intercept:  mean={np.mean(a_normalized_naive):.3f}, std={np.std(a_normalized_naive):.3f}")
+    print(f"  Naive slope:      mean={np.mean(b_normalized_naive):.3f}, std={np.std(b_normalized_naive):.3f}")
+    
+    # Create figure (2x2: histograms comparing robust vs naive)
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    
+    # Top row: intercept distributions
     ax = axes[0, 0]
-    ax.hist(a_values, bins=40, density=True, alpha=0.7, color='#2E86AB', edgecolor='black')
-    ax.axvline(true_a, color='red', linestyle='--', lw=2, label=f'True = {true_a}')
-    ax.axvline(np.mean(a_values), color='orange', linestyle='-', lw=2, 
-               label=f'Mean = {np.mean(a_values):.3f}')
+    ax.hist(a_values, bins=40, density=True, alpha=0.6, color='#2E86AB', 
+            edgecolor='black', label=f'Robust (std={a_scatter:.3f})')
+    ax.hist(a_values_naive, bins=40, density=True, alpha=0.6, color='#E94F37',
+            edgecolor='black', label=f'Naive (std={a_scatter_naive:.3f})')
+    ax.axvline(true_a, color='black', linestyle='--', lw=2, label=f'True = {true_a}')
     ax.set_xlabel('Intercept (a)')
     ax.set_ylabel('Density')
     ax.set_title('Distribution of Recovered Intercepts')
@@ -778,22 +810,27 @@ def demo_uncertainty_validation():
     ax.grid(True, alpha=0.3)
     
     ax = axes[0, 1]
-    ax.hist(a_normalized, bins=40, density=True, alpha=0.7, color='#2E86AB', edgecolor='black')
+    ax.hist(a_normalized, bins=40, density=True, alpha=0.6, color='#2E86AB', 
+            edgecolor='black', label=f'Robust (std={np.std(a_normalized):.2f})')
+    ax.hist(a_normalized_naive, bins=40, density=True, alpha=0.6, color='#E94F37',
+            edgecolor='black', label=f'Naive (std={np.std(a_normalized_naive):.2f})')
     # Overlay standard normal
-    x_norm = np.linspace(-4, 4, 100)
-    ax.plot(x_norm, np.exp(-x_norm**2/2)/np.sqrt(2*np.pi), 'r-', lw=2, label='N(0,1)')
+    x_norm = np.linspace(-6, 6, 100)
+    ax.plot(x_norm, np.exp(-x_norm**2/2)/np.sqrt(2*np.pi), 'k-', lw=2, label='N(0,1)')
     ax.set_xlabel('(a - a_true) / σ_a')
     ax.set_ylabel('Density')
-    ax.set_title(f'Normalized Intercept Residuals\nstd = {np.std(a_normalized):.3f}')
+    ax.set_title('Normalized Intercept Residuals')
     ax.legend()
     ax.grid(True, alpha=0.3)
+    ax.set_xlim(-6, 6)
     
-    # Bottom row: slope
+    # Bottom row: slope distributions
     ax = axes[1, 0]
-    ax.hist(b_values, bins=40, density=True, alpha=0.7, color='#28A745', edgecolor='black')
-    ax.axvline(true_b, color='red', linestyle='--', lw=2, label=f'True = {true_b}')
-    ax.axvline(np.mean(b_values), color='orange', linestyle='-', lw=2,
-               label=f'Mean = {np.mean(b_values):.3f}')
+    ax.hist(b_values, bins=40, density=True, alpha=0.6, color='#2E86AB',
+            edgecolor='black', label=f'Robust (std={b_scatter:.4f})')
+    ax.hist(b_values_naive, bins=40, density=True, alpha=0.6, color='#E94F37',
+            edgecolor='black', label=f'Naive (std={b_scatter_naive:.4f})')
+    ax.axvline(true_b, color='black', linestyle='--', lw=2, label=f'True = {true_b}')
     ax.set_xlabel('Slope (b)')
     ax.set_ylabel('Density')
     ax.set_title('Distribution of Recovered Slopes')
@@ -801,35 +838,42 @@ def demo_uncertainty_validation():
     ax.grid(True, alpha=0.3)
     
     ax = axes[1, 1]
-    ax.hist(b_normalized, bins=40, density=True, alpha=0.7, color='#28A745', edgecolor='black')
-    ax.plot(x_norm, np.exp(-x_norm**2/2)/np.sqrt(2*np.pi), 'r-', lw=2, label='N(0,1)')
+    ax.hist(b_normalized, bins=40, density=True, alpha=0.6, color='#2E86AB',
+            edgecolor='black', label=f'Robust (std={np.std(b_normalized):.2f})')
+    ax.hist(b_normalized_naive, bins=40, density=True, alpha=0.6, color='#E94F37',
+            edgecolor='black', label=f'Naive (std={np.std(b_normalized_naive):.2f})')
+    ax.plot(x_norm, np.exp(-x_norm**2/2)/np.sqrt(2*np.pi), 'k-', lw=2, label='N(0,1)')
     ax.set_xlabel('(b - b_true) / σ_b')
     ax.set_ylabel('Density')
-    ax.set_title(f'Normalized Slope Residuals\nstd = {np.std(b_normalized):.3f}')
+    ax.set_title('Normalized Slope Residuals')
     ax.legend()
     ax.grid(True, alpha=0.3)
+    ax.set_xlim(-6, 6)
     
-    plt.suptitle(f'Monte Carlo Validation: {n_realizations} realizations, {int(outlier_fraction*100)}% outliers',
+    plt.suptitle(f'Monte Carlo Validation: {n_realizations} realizations, {int(outlier_fraction*100)}% outliers\n'
+                 'Robust fit vs Naive WLS',
                  fontsize=14, y=1.02)
     plt.tight_layout()
     plt.savefig(PLOT_DIR / 'uncertainty_validation.png')
     plt.savefig(PLOT_DIR / 'uncertainty_validation.pdf')
     print(f"\nSaved: {PLOT_DIR / 'uncertainty_validation.png'}")
     
-    # Also create a summary figure
-    fig2, ax = plt.subplots(figsize=(8, 6))
+    # Also create a summary figure comparing robust vs naive
+    fig2, ax = plt.subplots(figsize=(10, 6))
     
-    categories = ['Intercept (a)', 'Slope (b)']
+    categories = ['Intercept (a)\nRobust', 'Intercept (a)\nNaive', 
+                  'Slope (b)\nRobust', 'Slope (b)\nNaive']
     x_pos = np.arange(len(categories))
     width = 0.35
     
-    actual_scatter = [a_scatter, b_scatter]
-    reported_error = [a_mean_error, b_mean_error]
+    actual_scatter = [a_scatter, a_scatter_naive, b_scatter, b_scatter_naive]
+    reported_error = [a_mean_error, a_mean_error_naive, b_mean_error, b_mean_error_naive]
+    colors = ['#2E86AB', '#E94F37', '#2E86AB', '#E94F37']
     
     bars1 = ax.bar(x_pos - width/2, actual_scatter, width, label='Actual Scatter (MC)', 
-                   color='#2E86AB', edgecolor='black', alpha=0.8)
+                   color=colors, edgecolor='black', alpha=0.8)
     bars2 = ax.bar(x_pos + width/2, reported_error, width, label='Mean Reported Error',
-                   color='#28A745', edgecolor='black', alpha=0.8)
+                   color=['#28A745']*4, edgecolor='black', alpha=0.8)
     
     ax.set_xticks(x_pos)
     ax.set_xticklabels(categories)

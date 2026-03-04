@@ -5,7 +5,7 @@
 % method, suitable for inclusion in the Methods section of scientific papers.
 %
 % Reference: Artigau et al. (2022), AJ, 164, 84, Appendix A
-% Implementation: https://github.com/eartigau/odd_ratio_linfit
+% Implementation: https://github.com/eartigau/odd_ratio_fits
 % 
 % Authors: Artigau, Cook, Cadieux, Stefanov (Atanas K.), Doyon
 % =============================================================================
@@ -229,21 +229,21 @@ The odd ratio method offers several advantages over traditional sigma-clipping:
 \label{sec:implementation}
 % =============================================================================
 
-The method is implemented in the open-source Python package \texttt{odd\_ratio\_linfit},
-available at \url{https://github.com/eartigau/odd_ratio_linfit}. The package provides
+The method is implemented in the open-source Python package \texttt{odd\_ratio\_fits},
+available at \url{https://github.com/eartigau/odd_ratio_fits}. The package provides
 three main functions:
 
 \begin{itemize}
-    \item \texttt{odd\_ratio\_linfit}: Robust linear regression $y = a + bx$
-    \item \texttt{odd\_ratio\_mean}: Robust weighted mean
-    \item \texttt{odd\_ratio\_polyfit}: Robust polynomial regression
+    \item \texttt{orf.mean}: Robust weighted mean
+    \item \texttt{orf.linear}: Robust linear regression $y = a + bx$
+    \item \texttt{orf.polyfit}: Robust polynomial regression
 \end{itemize}
 
 Basic usage:
 \begin{verbatim}
-from odd_ratio_linfit import odd_ratio_linfit
+import odd_ratio_fits as orf
 
-a, a_err, b, b_err = odd_ratio_linfit(x, y, yerr)
+a, a_err, b, b_err = orf.linear(x, y, yerr)
 \end{verbatim}
 
 The package depends only on NumPy and is compatible with Python 3.8+.
