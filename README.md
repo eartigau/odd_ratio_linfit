@@ -236,14 +236,23 @@ coeffs, coeffs_err = orf.polyfit(x, y, yerr, degree=2)
 print(f"Coefficients [a2, a1, a0]: {coeffs}")
 ```
 
-### Example: Quadratic Fit
+### Example: Quadratic Fit with Monte Carlo Validation
 
-**Simulation setup:**
+**Monte Carlo simulation setup:**
+- 500 independent realizations
 - 80 points following y = 0.05x² - 0.5x + 3 with Gaussian noise (σ = 0.5)
-- 8 outliers (10%) with deviations of ±3 to ±8
-- Comparison: standard `np.polyfit` vs. odd ratio polyfit
+- 10% outliers with deviations of ±3σ to ±8σ
+- Compare: standard `np.polyfit` vs. ORF robust polyfit
+
+| Parameter | True | ORF std | Naive std | Improvement |
+|-----------|------|---------|-----------|-------------|
+| a₂ (x²) | 0.05 | 0.008 | 0.027 | **3.4×** |
+| a₁ (x) | -0.5 | 0.08 | 0.28 | **3.5×** |
+| a₀ (const) | 3.0 | 0.18 | 0.59 | **3.3×** |
 
 ![Polynomial Fit](plots/polynomial_fit_comparison.png)
+
+![Polynomial Coefficients MC](plots/polynomial_coefficients_mc.png)
 
 *Reproduce with:* `python -c "from demo import demo_polynomial_fit; demo_polynomial_fit()"`
 

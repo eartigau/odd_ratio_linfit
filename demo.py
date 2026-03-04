@@ -95,19 +95,19 @@ def demo_linear_fit_comparison():
     print(f"Standard fit: a = {a_std:.3f} ± {a_std_err:.3f}, b = {b_std:.3f} ± {b_std_err:.3f}")
     print(f"Robust fit:   a = {a_rob:.3f} ± {a_rob_err:.3f}, b = {b_rob:.3f} ± {b_rob_err:.3f}")
     
-    # Create figure
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    # Create figure - vertical layout
+    fig, axes = plt.subplots(2, 1, figsize=(10, 10))
     
-    # Left panel: Data and fits
+    # Top panel: Data and fits
     ax = axes[0]
     
     # Plot data points, colored by weight
     outlier_mask = weights < 0.5
     ax.errorbar(x[~outlier_mask], y[~outlier_mask], yerr=yerr[~outlier_mask], 
-                fmt='o', color='#2E86AB', markersize=8, alpha=0.8, 
+                fmt='o', color='#2E86AB', markersize=8, alpha=0.5, 
                 label='Valid points', capsize=3, elinewidth=1.5)
     ax.errorbar(x[outlier_mask], y[outlier_mask], yerr=yerr[outlier_mask], 
-                fmt='s', color='#E94F37', markersize=10, alpha=0.8, 
+                fmt='s', color='#E94F37', markersize=10, alpha=0.5, 
                 label=f'Outliers (weight < 0.5)', capsize=3, elinewidth=1.5)
     
     # Plot fits
@@ -122,10 +122,9 @@ def demo_linear_fit_comparison():
     ax.legend(loc='upper left')
     ax.grid(True, alpha=0.3)
     
-    # Right panel: Weights
+    # Bottom panel: Weights
     ax = axes[1]
-    colors = plt.cm.RdYlGn(weights)
-    scatter = ax.scatter(x, y, c=weights, cmap='RdYlGn', s=100, 
+    scatter = ax.scatter(x, y, c=weights, cmap='RdYlGn', s=100, alpha=0.5,
                          edgecolors='black', linewidth=0.5, vmin=0, vmax=1)
     cbar = plt.colorbar(scatter, ax=ax)
     cbar.set_label('Weight (probability of being valid)')
@@ -264,7 +263,7 @@ def demo_weighted_mean():
     
     bars1 = ax.bar(x_pos - width/2, scatters, width, label='Scatter (std)', 
                    color=['#E94F37', '#2E86AB', '#333333'], alpha=0.8, edgecolor='black')
-    bars2 = ax.bar(x_pos + width/2, biases, width, label='|Bias|',
+    bars2 = ax.bar(x_pos + width/2, biases, width, label='|Bias| (systematic offset)',
                    color=['#E94F37', '#2E86AB', '#333333'], alpha=0.4, edgecolor='black', hatch='///')
     
     ax.set_xticks(x_pos)
@@ -436,91 +435,132 @@ def demo_odd_ratio_sensitivity():
 
 def demo_polynomial_fit():
     """
-    Demonstrate polynomial fitting with outliers.
+    Demonstrate polynomial fitting with outliers using Monte Carlo validation.
     """
     print("\n" + "=" * 60)
-    print("Demo 5: Polynomial Fit with Outliers")
+    print("Demo 5: Polynomial Fit with Outliers - Monte Carlo Validation")
     print("=" * 60)
     
     n_points = 80
-    true_coeffs = [0.05, -0.5, 3.0]  # quadratic: 0.05*x^2 - 0.5*x + 3
+    true_coeffs = np.array([0.05, -0.5, 3.0])  # quadratic: 0.05*x^2 - 0.5*x + 3
     noise_level = 0.5
+    n_realizations = 500
+    outlier_fraction = 0.10
     
     x = np.linspace(0, 10, n_points)
-    y_true = np.polyval(true_coeffs, x)
-    y = y_true + np.random.normal(0, noise_level, n_points)
     yerr = np.ones(n_points) * noise_level
     
-    # Add outliers
-    n_outliers = 8
+    # Storage for MC results
+    rob_coeffs_all = []
+    std_coeffs_all = []
+    
+    print(f"\nRunning {n_realizations} Monte Carlo realizations...")
+    
+    for i in range(n_realizations):
+        y_true = np.polyval(true_coeffs, x)
+        y = y_true + np.random.normal(0, noise_level, n_points)
+        
+        # Add outliers
+        n_outliers = int(outlier_fraction * n_points)
+        outlier_idx = np.random.choice(n_points, n_outliers, replace=False)
+        y[outlier_idx] += np.random.choice([-1, 1], n_outliers) * np.random.uniform(3, 8, n_outliers)
+        
+        # Standard polynomial fit
+        std_coeffs = np.polyfit(x, y, 2, w=1/yerr)
+        std_coeffs_all.append(std_coeffs)
+        
+        # Robust polynomial fit
+        rob_coeffs, _ = orf.polyfit(x, y, yerr, degree=2)
+        rob_coeffs_all.append(rob_coeffs)
+    
+    rob_coeffs_all = np.array(rob_coeffs_all)
+    std_coeffs_all = np.array(std_coeffs_all)
+    
+    # Compute statistics
+    rob_means = np.mean(rob_coeffs_all, axis=0)
+    rob_stds = np.std(rob_coeffs_all, axis=0)
+    std_means = np.mean(std_coeffs_all, axis=0)
+    std_stds = np.std(std_coeffs_all, axis=0)
+    
+    coeff_names = ['a₂ (x²)', 'a₁ (x)', 'a₀ (const)']
+    
+    print(f"\nResults from {n_realizations} realizations:")
+    print(f"\n{'Parameter':<12} {'True':>8} {'ORF mean':>10} {'ORF std':>10} {'Naive mean':>12} {'Naive std':>10}")
+    print("-" * 65)
+    for i, name in enumerate(coeff_names):
+        print(f"{name:<12} {true_coeffs[i]:>8.4f} {rob_means[i]:>10.4f} {rob_stds[i]:>10.4f} {std_means[i]:>12.4f} {std_stds[i]:>10.4f}")
+    
+    # Generate one example realization for the fit plot
+    np.random.seed(42)
+    y_example = np.polyval(true_coeffs, x) + np.random.normal(0, noise_level, n_points)
+    n_outliers = int(outlier_fraction * n_points)
     outlier_idx = np.random.choice(n_points, n_outliers, replace=False)
-    y[outlier_idx] += np.random.choice([-1, 1], n_outliers) * np.random.uniform(3, 8, n_outliers)
+    y_example[outlier_idx] += np.random.choice([-1, 1], n_outliers) * np.random.uniform(3, 8, n_outliers)
     
-    # Standard polynomial fit
-    std_coeffs = np.polyfit(x, y, 2, w=1/yerr)
+    rob_coeffs_ex, rob_coeffs_err_ex, weights = orf.polyfit(x, y_example, yerr, degree=2, return_weights=True)
+    std_coeffs_ex = np.polyfit(x, y_example, 2, w=1/yerr)
     
-    # Robust polynomial fit
-    rob_coeffs, rob_coeffs_err, weights = orf.polyfit(
-        x, y, yerr, degree=2, return_weights=True
-    )
-    
-    print(f"\nTrue coefficients: {true_coeffs}")
-    print(f"Standard fit: [{std_coeffs[0]:.4f}, {std_coeffs[1]:.4f}, {std_coeffs[2]:.4f}]")
-    print(f"Robust fit: [{rob_coeffs[0]:.4f}, {rob_coeffs[1]:.4f}, {rob_coeffs[2]:.4f}]")
-    
-    # Create figure
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    
-    # Left panel: Data and fits
-    ax = axes[0]
+    # Figure 1: Fit comparison with blue/red points
+    fig1, ax = plt.subplots(figsize=(10, 6))
     
     outlier_mask = weights < 0.5
-    ax.errorbar(x[~outlier_mask], y[~outlier_mask], yerr=yerr[~outlier_mask], 
-                fmt='o', color='#2E86AB', markersize=7, alpha=0.7, 
+    ax.errorbar(x[~outlier_mask], y_example[~outlier_mask], yerr=yerr[~outlier_mask], 
+                fmt='o', color='#2E86AB', markersize=7, alpha=0.5, 
                 label='Valid points', capsize=2)
-    ax.errorbar(x[outlier_mask], y[outlier_mask], yerr=yerr[outlier_mask], 
-                fmt='s', color='#E94F37', markersize=9, alpha=0.8, 
+    ax.errorbar(x[outlier_mask], y_example[outlier_mask], yerr=yerr[outlier_mask], 
+                fmt='s', color='#E94F37', markersize=9, alpha=0.5, 
                 label='Outliers', capsize=2)
     
     x_fit = np.linspace(x.min(), x.max(), 200)
     ax.plot(x_fit, np.polyval(true_coeffs, x_fit), 'k--', lw=2, label='True curve')
-    ax.plot(x_fit, np.polyval(std_coeffs, x_fit), '#F28123', lw=2.5, label='Standard fit')
-    ax.plot(x_fit, np.polyval(rob_coeffs, x_fit), '#2E86AB', lw=2.5, label='Robust fit')
+    ax.plot(x_fit, np.polyval(std_coeffs_ex, x_fit), '#F28123', lw=2.5, label='Standard fit')
+    ax.plot(x_fit, np.polyval(rob_coeffs_ex, x_fit), '#2E86AB', lw=2.5, label='Robust fit')
     
     ax.set_xlabel('x')
     ax.set_ylabel('y')
-    ax.set_title('Quadratic Fit Comparison')
+    ax.set_title(f'Quadratic Fit Comparison ({n_points} points, {int(outlier_fraction*100)}% outliers)')
     ax.legend()
     ax.grid(True, alpha=0.3)
-    
-    # Right panel: Coefficient errors
-    ax = axes[1]
-    
-    coeff_names = ['$a_2$ (x²)', '$a_1$ (x)', '$a_0$ (const)']
-    x_pos = np.arange(len(coeff_names))
-    width = 0.35
-    
-    std_errors = np.abs(std_coeffs - true_coeffs)
-    rob_errors = np.abs(rob_coeffs - true_coeffs)
-    
-    bars1 = ax.bar(x_pos - width/2, std_errors, width, label='Standard', 
-                   color='#F28123', edgecolor='black', alpha=0.8)
-    bars2 = ax.bar(x_pos + width/2, rob_errors, width, label='Robust', 
-                   color='#2E86AB', edgecolor='black', alpha=0.8)
-    
-    ax.set_xticks(x_pos)
-    ax.set_xticklabels(coeff_names)
-    ax.set_ylabel('|Error| from True Value')
-    ax.set_title('Coefficient Recovery Accuracy')
-    ax.legend()
-    ax.grid(True, alpha=0.3, axis='y')
     
     plt.tight_layout()
     plt.savefig(PLOT_DIR / 'polynomial_fit_comparison.png')
     plt.savefig(PLOT_DIR / 'polynomial_fit_comparison.pdf')
     print(f"\nSaved: {PLOT_DIR / 'polynomial_fit_comparison.png'}")
     
-    return fig
+    # Figure 2: Histograms for each coefficient
+    fig2, axes = plt.subplots(3, 1, figsize=(10, 10))
+    
+    for i, (ax, name) in enumerate(zip(axes, coeff_names)):
+        # Determine bin range
+        all_vals = np.concatenate([rob_coeffs_all[:, i], std_coeffs_all[:, i]])
+        bin_min = min(all_vals.min(), true_coeffs[i] - 4*std_stds[i])
+        bin_max = max(all_vals.max(), true_coeffs[i] + 4*std_stds[i])
+        bins = np.linspace(bin_min, bin_max, 50)
+        
+        # Plot histograms
+        ax.hist(std_coeffs_all[:, i], bins=bins, density=True, alpha=0.5, color='#E94F37',
+                edgecolor='#E94F37', linewidth=1.5, label=f'Naive (σ={std_stds[i]:.4f})')
+        ax.hist(rob_coeffs_all[:, i], bins=bins, density=True, alpha=0.5, color='#2E86AB',
+                edgecolor='#2E86AB', linewidth=1.5, label=f'ORF (σ={rob_stds[i]:.4f})')
+        
+        # True value line
+        ax.axvline(true_coeffs[i], color='black', linestyle='--', lw=2, 
+                   label=f'True = {true_coeffs[i]:.4f}')
+        
+        ax.set_xlabel(f'{name}')
+        ax.set_ylabel('Probability Density')
+        ax.set_title(f'Distribution of {name}')
+        ax.legend(loc='upper right')
+        ax.grid(True, alpha=0.3)
+    
+    plt.suptitle(f'Monte Carlo Validation: {n_realizations} realizations, {int(outlier_fraction*100)}% outliers',
+                 fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.savefig(PLOT_DIR / 'polynomial_coefficients_mc.png')
+    plt.savefig(PLOT_DIR / 'polynomial_coefficients_mc.pdf')
+    print(f"Saved: {PLOT_DIR / 'polynomial_coefficients_mc.png'}")
+    
+    return fig1, fig2
 
 
 def demo_convergence():
